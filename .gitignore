@@ -1,0 +1,20 @@
+.env
+!.env.example
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+node_modules/
+dist/
+coverage/
+.DS_Store
+.idea/
+.vscode/
+postgres_data/
+uploads/
+# TypeScript build artifacts
+*.tsbuildinfo
+frontend/vite.config.js
+frontend/vite.config.d.ts
+frontend/tsconfig.node.js
+frontend/tsconfig.node.d.ts
