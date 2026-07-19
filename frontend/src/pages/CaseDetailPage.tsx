@@ -19,6 +19,7 @@ import {
 import { getCase } from '../api/cases'
 import { Can } from '../auth/Can'
 import { CaseAuditTimeline } from '../components/cases/CaseAuditTimeline'
+import { CaseEvidencePanel } from '../components/cases/CaseEvidencePanel'
 import { DeleteCaseDialog } from '../components/cases/DeleteCaseDialog'
 import { EditCaseForm } from '../components/cases/EditCaseForm'
 import type {
@@ -367,6 +368,10 @@ export function CaseDetailPage() {
           </article>
         </div>
       </div>
+
+      <CaseEvidencePanel
+        caseId={investigationCase.id}
+      />
 
       <Can permission="audit.read">
         <CaseAuditTimeline
