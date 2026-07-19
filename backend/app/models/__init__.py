@@ -7,6 +7,12 @@ from app.models.case_audit import (
     CaseAuditEvent,
     CaseAuditEventType,
 )
+from app.models.evidence import (
+    Evidence,
+    EvidenceCustodyEvent,
+    EvidenceCustodyEventType,
+    EvidenceType,
+)
 from app.models.permission import Permission
 from app.models.role import Role
 from app.models.user import User
@@ -18,6 +24,10 @@ __all__ = [
     "CaseStatus",
     "CaseAuditEvent",
     "CaseAuditEventType",
+    "Evidence",
+    "EvidenceCustodyEvent",
+    "EvidenceCustodyEventType",
+    "EvidenceType",
     "Permission",
     "Role",
     "User",

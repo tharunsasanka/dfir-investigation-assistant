@@ -1,14 +1,28 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, status
 
-from app.api.v1.auth import router as auth_router
-from app.api.v1.cases import router as cases_router
-from app.api.v1.dashboard import router as dashboard_router
-from app.api.v1.health import router as health_router
+from app.api.v1 import (
+    auth,
+    cases,
+    dashboard,
+    evidence,
+)
 
 
 api_router = APIRouter()
 
-api_router.include_router(health_router)
-api_router.include_router(auth_router)
-api_router.include_router(cases_router)
-api_router.include_router(dashboard_router)
+
+@api_router.get(
+    "/health",
+    tags=["health"],
+    status_code=status.HTTP_200_OK,
+)
+def health_check() -> dict[str, str]:
+    return {
+        "status": "healthy",
+    }
+
+
+api_router.include_router(auth.router)
+api_router.include_router(cases.router)
+api_router.include_router(dashboard.router)
+api_router.include_router(evidence.router)
