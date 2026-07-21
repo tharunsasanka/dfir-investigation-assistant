@@ -13,6 +13,13 @@ from app.models.evidence import (
     EvidenceCustodyEventType,
     EvidenceType,
 )
+from app.models.log_ingestion import (
+    LogEventSeverity,
+    LogFormat,
+    LogIngestionJob,
+    LogIngestionStatus,
+    ParsedLogEvent,
+)
 from app.models.permission import Permission
 from app.models.role import Role
 from app.models.user import User
@@ -28,6 +35,11 @@ __all__ = [
     "EvidenceCustodyEvent",
     "EvidenceCustodyEventType",
     "EvidenceType",
+    "LogEventSeverity",
+    "LogFormat",
+    "LogIngestionJob",
+    "LogIngestionStatus",
+    "ParsedLogEvent",
     "Permission",
     "Role",
     "User",

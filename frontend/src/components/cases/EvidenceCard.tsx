@@ -10,6 +10,7 @@ import {
   FileCheck2,
   History,
   LoaderCircle,
+  Play,
   ShieldAlert,
   XCircle,
 } from 'lucide-react'
@@ -27,6 +28,9 @@ import type {
 import {
   EvidenceCustodyDialog,
 } from './EvidenceCustodyDialog'
+import {
+  LogIngestionDialog,
+} from './LogIngestionDialog'
 
 type EvidenceCardProps = {
   evidence: EvidenceRecord
@@ -123,9 +127,22 @@ export function EvidenceCard({
   ] = useState(false)
 
   const [
+    isLogIngestionOpen,
+    setIsLogIngestionOpen,
+  ] = useState(false)
+
+  const [
     errorMessage,
     setErrorMessage,
   ] = useState('')
+
+  const isLogIngestionEligible = [
+    'log',
+    'document',
+    'other',
+  ].includes(
+    evidence.evidence_type,
+  )
 
   async function refreshCustodyHistory() {
     await queryClient.invalidateQueries({
@@ -389,6 +406,21 @@ export function EvidenceCard({
             <History size={17} />
             Chain of custody
           </button>
+
+          {isLogIngestionEligible && (
+            <Can permission="cases.update">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsLogIngestionOpen(true)
+                }}
+                className="flex items-center gap-2 rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-2 text-sm font-semibold text-amber-200 transition hover:bg-amber-400/20"
+              >
+                <Play size={17} />
+                Ingest logs
+              </button>
+            </Can>
+          )}
         </div>
       </article>
 
@@ -397,6 +429,15 @@ export function EvidenceCard({
           evidence={evidence}
           onClose={() => {
             setIsCustodyDialogOpen(false)
+          }}
+        />
+      )}
+
+      {isLogIngestionOpen && (
+        <LogIngestionDialog
+          evidence={evidence}
+          onClose={() => {
+            setIsLogIngestionOpen(false)
           }}
         />
       )}

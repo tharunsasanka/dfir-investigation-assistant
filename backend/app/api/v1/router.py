@@ -5,6 +5,7 @@ from app.api.v1 import (
     cases,
     dashboard,
     evidence,
+    log_ingestion,
 )
 
 
@@ -26,3 +27,6 @@ api_router.include_router(auth.router)
 api_router.include_router(cases.router)
 api_router.include_router(dashboard.router)
 api_router.include_router(evidence.router)
+api_router.include_router(
+    log_ingestion.router
+)
