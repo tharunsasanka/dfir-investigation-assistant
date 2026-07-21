@@ -3,6 +3,7 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 from app.core.config import get_settings
 from app.db.session import Base
+import app.models
 from app.db import base  # noqa: F401
 
 config = context.config
