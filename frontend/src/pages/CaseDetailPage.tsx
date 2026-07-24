@@ -18,34 +18,57 @@ import {
 
 import { getCase } from '../api/cases'
 import { Can } from '../auth/Can'
-import { CaseAuditTimeline } from '../components/cases/CaseAuditTimeline'
-import { CaseEvidencePanel } from '../components/cases/CaseEvidencePanel'
-import { DeleteCaseDialog } from '../components/cases/DeleteCaseDialog'
-import { EditCaseForm } from '../components/cases/EditCaseForm'
+import {
+  CaseAuditTimeline,
+} from '../components/cases/CaseAuditTimeline'
+import {
+  CaseEvidencePanel,
+} from '../components/cases/CaseEvidencePanel'
+import {
+  CaseLogEventExplorer,
+} from '../components/cases/CaseLogEventExplorer'
+import {
+  DeleteCaseDialog,
+} from '../components/cases/DeleteCaseDialog'
+import {
+  EditCaseForm,
+} from '../components/cases/EditCaseForm'
 import type {
   CaseSeverity,
   CaseStatus,
 } from '../types/case'
 
-function formatDate(dateValue: string): string {
-  return new Intl.DateTimeFormat('en-GB', {
-    dateStyle: 'full',
-    timeStyle: 'short',
-  }).format(new Date(dateValue))
+function formatDate(
+  dateValue: string,
+): string {
+  return new Intl.DateTimeFormat(
+    'en-GB',
+    {
+      dateStyle: 'full',
+      timeStyle: 'short',
+    },
+  ).format(new Date(dateValue))
 }
 
-function formatLabel(value: string): string {
+function formatLabel(
+  value: string,
+): string {
   return value
     .replace(/_/g, ' ')
-    .replace(/\b\w/g, (character) =>
-      character.toUpperCase(),
+    .replace(
+      /\b\w/g,
+      (character) =>
+        character.toUpperCase(),
     )
 }
 
 function getSeverityClasses(
   severity: CaseSeverity,
 ): string {
-  const classes: Record<CaseSeverity, string> = {
+  const classes: Record<
+    CaseSeverity,
+    string
+  > = {
     low: [
       'border-emerald-400/30',
       'bg-emerald-400/10',
@@ -77,7 +100,10 @@ function getSeverityClasses(
 function getStatusClasses(
   status: CaseStatus,
 ): string {
-  const classes: Record<CaseStatus, string> = {
+  const classes: Record<
+    CaseStatus,
+    string
+  > = {
     open: 'text-cyan',
     investigating: 'text-amber-300',
     review: 'text-violet-300',
@@ -144,7 +170,8 @@ export function CaseDetailPage() {
 
     if (
       isAxiosError(caseQuery.error) &&
-      caseQuery.error.response?.status === 404
+      caseQuery.error.response
+        ?.status === 404
     ) {
       errorMessage =
         'The requested investigation case does not exist or has been archived.'
@@ -180,7 +207,8 @@ export function CaseDetailPage() {
     )
   }
 
-  const investigationCase = caseQuery.data
+  const investigationCase =
+    caseQuery.data
 
   if (!investigationCase) {
     return null
@@ -215,7 +243,9 @@ export function CaseDetailPage() {
             <button
               type="button"
               onClick={() => {
-                setIsArchiveDialogOpen(true)
+                setIsArchiveDialogOpen(
+                  true,
+                )
               }}
               className="flex items-center gap-2 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-2 text-sm font-semibold text-red-200 transition hover:bg-red-400/20"
             >
@@ -237,7 +267,8 @@ export function CaseDetailPage() {
           </h1>
 
           <p className="mt-3 break-all text-xs text-slate-500">
-            Case ID: {investigationCase.id}
+            Case ID:{' '}
+            {investigationCase.id}
           </p>
         </div>
 
@@ -305,7 +336,8 @@ export function CaseDetailPage() {
 
                 <dd className="font-semibold">
                   {formatLabel(
-                    investigationCase.severity,
+                    investigationCase
+                      .severity,
                   )}
                 </dd>
               </div>
@@ -319,12 +351,14 @@ export function CaseDetailPage() {
                   className={[
                     'font-semibold',
                     getStatusClasses(
-                      investigationCase.status,
+                      investigationCase
+                        .status,
                     ),
                   ].join(' ')}
                 >
                   {formatLabel(
-                    investigationCase.status,
+                    investigationCase
+                      .status,
                   )}
                 </dd>
               </div>
@@ -348,7 +382,8 @@ export function CaseDetailPage() {
 
                 <dd className="mt-1 font-medium">
                   {formatDate(
-                    investigationCase.created_at,
+                    investigationCase
+                      .created_at,
                   )}
                 </dd>
               </div>
@@ -360,7 +395,8 @@ export function CaseDetailPage() {
 
                 <dd className="mt-1 font-medium">
                   {formatDate(
-                    investigationCase.updated_at,
+                    investigationCase
+                      .updated_at,
                   )}
                 </dd>
               </div>
@@ -369,19 +405,31 @@ export function CaseDetailPage() {
         </div>
       </div>
 
-      <CaseEvidencePanel
-        caseId={investigationCase.id}
-      />
-
-      <Can permission="audit.read">
-        <CaseAuditTimeline
+      <div className="mt-8">
+        <CaseEvidencePanel
           caseId={investigationCase.id}
         />
+      </div>
+
+      <div className="mt-8">
+        <CaseLogEventExplorer
+          caseId={investigationCase.id}
+        />
+      </div>
+
+      <Can permission="audit.read">
+        <div className="mt-8">
+          <CaseAuditTimeline
+            caseId={investigationCase.id}
+          />
+        </div>
       </Can>
 
       {isEditFormOpen && (
         <EditCaseForm
-          investigationCase={investigationCase}
+          investigationCase={
+            investigationCase
+          }
           onClose={() => {
             setIsEditFormOpen(false)
           }}
@@ -390,9 +438,13 @@ export function CaseDetailPage() {
 
       {isArchiveDialogOpen && (
         <DeleteCaseDialog
-          investigationCase={investigationCase}
+          investigationCase={
+            investigationCase
+          }
           onClose={() => {
-            setIsArchiveDialogOpen(false)
+            setIsArchiveDialogOpen(
+              false,
+            )
           }}
         />
       )}
