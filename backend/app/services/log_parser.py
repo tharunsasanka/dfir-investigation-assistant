@@ -10,6 +10,10 @@ from app.models.log_ingestion import (
     LogEventSeverity,
     LogFormat,
 )
+from app.services.windows_event_normalizer import (
+    looks_like_windows_event_record,
+    normalize_windows_event_record,
+)
 
 
 MAX_PARSE_BYTES = 25 * 1024 * 1024
@@ -19,7 +23,8 @@ MAX_MESSAGE_LENGTH = 20_000
 SYSLOG_PATTERN = re.compile(
     r"^(?:<(?P<priority>\d{1,3})>)?"
     r"(?:(?P<timestamp>"
-    r"[A-Z][a-z]{2}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}"
+    r"[A-Z][a-z]{2}\s+\d{1,2}\s+"
+    r"\d{2}:\d{2}:\d{2}"
     r")\s+)?"
     r"(?:(?P<host>[^\s]+)\s+)?"
     r"(?:(?P<process>[\w./-]+)"
@@ -28,15 +33,21 @@ SYSLOG_PATTERN = re.compile(
 )
 
 
-class UnsupportedLogFormatError(ValueError):
+class UnsupportedLogFormatError(
+    ValueError,
+):
     pass
 
 
-class LogFileTooLargeError(ValueError):
+class LogFileTooLargeError(
+    ValueError,
+):
     pass
 
 
-class LogRecordLimitError(ValueError):
+class LogRecordLimitError(
+    ValueError,
+):
     pass
 
 
@@ -71,7 +82,9 @@ def safe_text(
     if value is None:
         return ""
 
-    return str(value).strip()[:maximum_length]
+    return str(value).strip()[
+        :maximum_length
+    ]
 
 
 def first_present(
@@ -136,14 +149,16 @@ def parse_datetime_value(
     except ValueError:
         pass
 
-    formats = (
+    supported_formats = (
         "%Y-%m-%d %H:%M:%S",
         "%Y/%m/%d %H:%M:%S",
         "%d/%m/%Y %H:%M:%S",
         "%b %d %H:%M:%S",
     )
 
-    for date_format in formats:
+    for date_format in (
+        supported_formats
+    ):
         try:
             parsed = datetime.strptime(
                 text,
@@ -157,7 +172,7 @@ def parse_datetime_value(
                 parsed = parsed.replace(
                     year=datetime.now(
                         timezone.utc
-                    ).year
+                    ).year,
                 )
 
             return parsed.replace(
@@ -174,7 +189,9 @@ def normalize_severity(
     value: Any,
 ) -> LogEventSeverity:
     if value is None:
-        return LogEventSeverity.unknown
+        return (
+            LogEventSeverity.unknown
+        )
 
     text = str(value).strip().lower()
 
@@ -197,8 +214,12 @@ def normalize_severity(
         "fatal": (
             LogEventSeverity.critical
         ),
-        "high": LogEventSeverity.high,
-        "error": LogEventSeverity.high,
+        "high": (
+            LogEventSeverity.high
+        ),
+        "error": (
+            LogEventSeverity.high
+        ),
         "err": LogEventSeverity.high,
         "warning": (
             LogEventSeverity.medium
@@ -209,19 +230,25 @@ def normalize_severity(
         "medium": (
             LogEventSeverity.medium
         ),
-        "notice": LogEventSeverity.low,
+        "notice": (
+            LogEventSeverity.low
+        ),
         "low": LogEventSeverity.low,
         "information": (
-            LogEventSeverity.informational
+            LogEventSeverity
+            .informational
         ),
         "informational": (
-            LogEventSeverity.informational
+            LogEventSeverity
+            .informational
         ),
         "info": (
-            LogEventSeverity.informational
+            LogEventSeverity
+            .informational
         ),
         "debug": (
-            LogEventSeverity.informational
+            LogEventSeverity
+            .informational
         ),
     }
 
@@ -231,14 +258,75 @@ def normalize_severity(
     )
 
 
+def _prepare_record_for_normalization(
+    record: dict[str, Any],
+    source_type: str,
+) -> tuple[
+    dict[str, Any],
+    str,
+    dict[str, Any],
+]:
+    if not (
+        looks_like_windows_event_record(
+            record
+        )
+    ):
+        return (
+            record,
+            source_type,
+            {},
+        )
+
+    windows_record = (
+        normalize_windows_event_record(
+            record
+        )
+    )
+
+    windows_metadata = {
+        "provider": windows_record.get(
+            "provider",
+            "",
+        ),
+        "channel": windows_record.get(
+            "channel",
+            "",
+        ),
+        "record_id": windows_record.get(
+            "record_id",
+            "",
+        ),
+        "event_data": windows_record.get(
+            "event_data",
+            {},
+        ),
+        "input_format": source_type,
+    }
+
+    return (
+        windows_record,
+        "windows_event",
+        windows_metadata,
+    )
+
+
 def normalize_dictionary_record(
     *,
     record: dict[str, Any],
     event_index: int,
     source_type: str,
 ) -> ParsedRecord:
-    event_time_value = first_present(
+    (
+        effective_record,
+        effective_source_type,
+        additional_metadata,
+    ) = _prepare_record_for_normalization(
         record,
+        source_type,
+    )
+
+    event_time_value = first_present(
+        effective_record,
         (
             "timestamp",
             "time",
@@ -251,7 +339,7 @@ def normalize_dictionary_record(
     )
 
     event_code_value = first_present(
-        record,
+        effective_record,
         (
             "event_id",
             "eventid",
@@ -262,7 +350,7 @@ def normalize_dictionary_record(
     )
 
     severity_value = first_present(
-        record,
+        effective_record,
         (
             "severity",
             "level",
@@ -272,7 +360,7 @@ def normalize_dictionary_record(
     )
 
     host_value = first_present(
-        record,
+        effective_record,
         (
             "host",
             "hostname",
@@ -283,7 +371,7 @@ def normalize_dictionary_record(
     )
 
     username_value = first_present(
-        record,
+        effective_record,
         (
             "username",
             "user",
@@ -293,7 +381,7 @@ def normalize_dictionary_record(
     )
 
     process_value = first_present(
-        record,
+        effective_record,
         (
             "process",
             "process_name",
@@ -304,7 +392,7 @@ def normalize_dictionary_record(
     )
 
     source_ip_value = first_present(
-        record,
+        effective_record,
         (
             "source_ip",
             "src_ip",
@@ -314,19 +402,21 @@ def normalize_dictionary_record(
         ),
     )
 
-    destination_ip_value = first_present(
-        record,
-        (
-            "destination_ip",
-            "dest_ip",
-            "dst_ip",
-            "dstip",
-            "server_ip",
-        ),
+    destination_ip_value = (
+        first_present(
+            effective_record,
+            (
+                "destination_ip",
+                "dest_ip",
+                "dst_ip",
+                "dstip",
+                "server_ip",
+            ),
+        )
     )
 
     message_value = first_present(
-        record,
+        effective_record,
         (
             "message",
             "description",
@@ -344,7 +434,7 @@ def normalize_dictionary_record(
     if not message:
         message = safe_text(
             json.dumps(
-                record,
+                effective_record,
                 ensure_ascii=False,
                 default=str,
             ),
@@ -388,10 +478,13 @@ def normalize_dictionary_record(
     normalized_event = {
         "event_time": (
             str(event_time_value)
-            if event_time_value is not None
+            if event_time_value
+            is not None
             else None
         ),
-        "source_type": source_type,
+        "source_type": (
+            effective_source_type
+        ),
         "event_code": event_code,
         "severity": severity.value,
         "host": host,
@@ -402,6 +495,7 @@ def normalize_dictionary_record(
             destination_ip
         ),
         "message": message,
+        **additional_metadata,
     }
 
     return ParsedRecord(
@@ -409,23 +503,51 @@ def normalize_dictionary_record(
         event_time=parse_datetime_value(
             event_time_value
         ),
-        source_type=source_type,
+        source_type=(
+            effective_source_type
+        ),
         event_code=event_code,
         severity=severity,
         host=host,
         username=username,
         process_name=process_name,
         source_ip=source_ip,
-        destination_ip=destination_ip,
+        destination_ip=(
+            destination_ip
+        ),
         message=message,
         raw_event={
             str(key): value
-            for key, value in record.items()
+            for key, value
+            in record.items()
         },
         normalized_event=(
             normalized_event
         ),
     )
+
+
+def _looks_like_json_lines(
+    sample: str,
+) -> bool:
+    non_empty_lines = [
+        line.strip()
+        for line in sample.splitlines()
+        if line.strip()
+    ]
+
+    if len(non_empty_lines) < 2:
+        return False
+
+    checked_lines = non_empty_lines[:3]
+
+    for line in checked_lines:
+        try:
+            json.loads(line)
+        except json.JSONDecodeError:
+            return False
+
+    return True
 
 
 def detect_log_format(
@@ -462,20 +584,18 @@ def detect_log_format(
         return LogFormat.json
 
     if stripped.startswith("{"):
-        json_lines = [
-            line
-            for line in sample.splitlines()
-            if line.strip()
-        ]
-
-        if len(json_lines) > 1:
+        if _looks_like_json_lines(
+            sample
+        ):
             return LogFormat.json_lines
 
         return LogFormat.json
 
+    lines = sample.splitlines()
+
     first_line = (
-        sample.splitlines()[0]
-        if sample.splitlines()
+        lines[0]
+        if lines
         else ""
     )
 
@@ -495,7 +615,7 @@ def detect_log_format(
 
     syslog_matches = 0
 
-    for line in sample.splitlines()[:10]:
+    for line in lines[:10]:
         if (
             line.startswith("<")
             or re.match(
@@ -525,14 +645,16 @@ def parse_json_file(
         records = payload
 
     elif isinstance(payload, dict):
-        possible_records = first_present(
-            payload,
-            (
-                "events",
-                "records",
-                "items",
-                "logs",
-            ),
+        possible_records = (
+            first_present(
+                payload,
+                (
+                    "events",
+                    "records",
+                    "items",
+                    "logs",
+                ),
+            )
         )
 
         if isinstance(
@@ -550,9 +672,11 @@ def parse_json_file(
             }
         ]
 
-    for event_index, item in enumerate(
-        records,
-        start=1,
+    for event_index, item in (
+        enumerate(
+            records,
+            start=1,
+        )
     ):
         if (
             event_index
@@ -585,9 +709,11 @@ def parse_json_lines(
     ) as input_file:
         event_index = 0
 
-        for line_number, line in enumerate(
-            input_file,
-            start=1,
+        for line_number, line in (
+            enumerate(
+                input_file,
+                start=1,
+            )
         ):
             stripped = line.strip()
 
@@ -618,24 +744,33 @@ def parse_json_lines(
                         "message": str(item),
                     }
 
-                yield normalize_dictionary_record(
-                    record=item,
-                    event_index=event_index,
-                    source_type=(
-                        "json_lines"
-                    ),
+                yield (
+                    normalize_dictionary_record(
+                        record=item,
+                        event_index=(
+                            event_index
+                        ),
+                        source_type=(
+                            "json_lines"
+                        ),
+                    )
                 )
 
-            except json.JSONDecodeError as error:
+            except (
+                json.JSONDecodeError
+            ) as error:
                 yield ParsedRecord(
-                    event_index=event_index,
+                    event_index=(
+                        event_index
+                    ),
                     event_time=None,
                     source_type=(
                         "json_lines"
                     ),
                     event_code="",
                     severity=(
-                        LogEventSeverity.unknown
+                        LogEventSeverity
+                        .unknown
                     ),
                     host="",
                     username="",
@@ -656,7 +791,9 @@ def parse_json_lines(
                             :MAX_MESSAGE_LENGTH
                         ],
                     },
-                    parse_error=str(error),
+                    parse_error=str(
+                        error
+                    ),
                 )
 
 
@@ -674,14 +811,18 @@ def parse_csv_file(
         )
 
         if not reader.fieldnames:
-            raise UnsupportedLogFormatError(
-                "The CSV file does not "
-                "contain a valid header row."
+            raise (
+                UnsupportedLogFormatError(
+                    "The CSV file does not "
+                    "contain a valid header row."
+                )
             )
 
-        for event_index, row in enumerate(
-            reader,
-            start=1,
+        for event_index, row in (
+            enumerate(
+                reader,
+                start=1,
+            )
         ):
             if (
                 event_index
@@ -694,14 +835,17 @@ def parse_csv_file(
 
             normalized_row = {
                 str(key): value
-                for key, value in row.items()
+                for key, value
+                in row.items()
                 if key is not None
             }
 
-            yield normalize_dictionary_record(
-                record=normalized_row,
-                event_index=event_index,
-                source_type="csv",
+            yield (
+                normalize_dictionary_record(
+                    record=normalized_row,
+                    event_index=event_index,
+                    source_type="csv",
+                )
             )
 
 
@@ -715,9 +859,11 @@ def parse_syslog_file(
     ) as input_file:
         event_index = 0
 
-        for line_number, line in enumerate(
-            input_file,
-            start=1,
+        for line_number, line in (
+            enumerate(
+                input_file,
+                start=1,
+            )
         ):
             stripped = line.strip()
 
@@ -741,12 +887,15 @@ def parse_syslog_file(
 
             if match is None:
                 yield ParsedRecord(
-                    event_index=event_index,
+                    event_index=(
+                        event_index
+                    ),
                     event_time=None,
                     source_type="syslog",
                     event_code="",
                     severity=(
-                        LogEventSeverity.unknown
+                        LogEventSeverity
+                        .unknown
                     ),
                     host="",
                     username="",
@@ -852,7 +1001,9 @@ def parse_syslog_file(
                 "event_time": timestamp,
                 "source_type": "syslog",
                 "event_code": "",
-                "severity": severity.value,
+                "severity": (
+                    severity.value
+                ),
                 "host": host,
                 "username": "",
                 "process_name": (
@@ -877,7 +1028,9 @@ def parse_syslog_file(
                 severity=severity,
                 host=host,
                 username="",
-                process_name=process_name,
+                process_name=(
+                    process_name
+                ),
                 source_ip="",
                 destination_ip="",
                 message=message,
@@ -903,9 +1056,11 @@ def parse_plain_text_file(
     ) as input_file:
         event_index = 0
 
-        for line_number, line in enumerate(
-            input_file,
-            start=1,
+        for line_number, line in (
+            enumerate(
+                input_file,
+                start=1,
+            )
         ):
             stripped = line.strip()
 
@@ -926,7 +1081,9 @@ def parse_plain_text_file(
             yield ParsedRecord(
                 event_index=event_index,
                 event_time=None,
-                source_type="plain_text",
+                source_type=(
+                    "plain_text"
+                ),
                 event_code="",
                 severity=(
                     LogEventSeverity.unknown
@@ -981,11 +1138,15 @@ def parse_log_file(
     )
 
     parser_map = {
-        LogFormat.json: parse_json_file,
+        LogFormat.json: (
+            parse_json_file
+        ),
         LogFormat.json_lines: (
             parse_json_lines
         ),
-        LogFormat.csv: parse_csv_file,
+        LogFormat.csv: (
+            parse_csv_file
+        ),
         LogFormat.syslog: (
             parse_syslog_file
         ),
@@ -999,9 +1160,11 @@ def parse_log_file(
     )
 
     if parser is None:
-        raise UnsupportedLogFormatError(
-            "The selected log format "
-            "is not supported."
+        raise (
+            UnsupportedLogFormatError(
+                "The selected log format "
+                "is not supported."
+            )
         )
 
     return (
