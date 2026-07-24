@@ -6,6 +6,7 @@ from app.api.v1 import (
     dashboard,
     evidence,
     log_ingestion,
+    security_findings,
 )
 
 
@@ -29,4 +30,7 @@ api_router.include_router(dashboard.router)
 api_router.include_router(evidence.router)
 api_router.include_router(
     log_ingestion.router,
+)
+api_router.include_router(
+    security_findings.router,
 )
