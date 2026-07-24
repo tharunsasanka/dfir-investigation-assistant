@@ -33,6 +33,9 @@ import {
 import {
   EditCaseForm,
 } from '../components/cases/EditCaseForm'
+import {
+  LogIngestionHistory,
+} from '../components/cases/LogIngestionHistory'
 import type {
   CaseSeverity,
   CaseStatus,
@@ -413,6 +416,12 @@ export function CaseDetailPage() {
 
       <div className="mt-8">
         <CaseLogEventExplorer
+          caseId={investigationCase.id}
+        />
+      </div>
+
+      <div className="mt-8">
+        <LogIngestionHistory
           caseId={investigationCase.id}
         />
       </div>
