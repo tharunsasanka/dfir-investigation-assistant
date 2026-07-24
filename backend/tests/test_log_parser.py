@@ -294,10 +294,7 @@ def test_parse_windows_event_json_lines(
 
     assert (
         event.severity
-        == (
-            LogEventSeverity
-            .informational
-        )
+        == LogEventSeverity.informational
     )
 
     assert (
@@ -329,6 +326,247 @@ def test_parse_windows_event_json_lines(
             "input_format"
         ]
         == "json_lines"
+    )
+
+
+def test_parse_linux_auth_syslog(
+    tmp_path: Path,
+) -> None:
+    log_path = (
+        tmp_path / "auth.log"
+    )
+
+    log_path.write_text(
+        (
+            "Jul 24 08:15:00 "
+            "server-01 "
+            "sshd[2150]: "
+            "Accepted password for analyst "
+            "from 192.168.1.25 "
+            "port 52844 ssh2\n"
+            "Jul 24 08:20:00 "
+            "server-01 "
+            "sudo[2190]: "
+            "analyst : "
+            "TTY=pts/0 ; "
+            "PWD=/home/analyst ; "
+            "USER=root ; "
+            "COMMAND=/usr/bin/cat "
+            "/etc/shadow\n"
+        ),
+        encoding="utf-8",
+    )
+
+    (
+        detected_format,
+        parsed_iterator,
+    ) = parse_log_file(
+        path=log_path,
+        original_filename="auth.log",
+        requested_format=(
+            LogFormat.auto
+        ),
+    )
+
+    parsed = list(
+        parsed_iterator
+    )
+
+    assert (
+        detected_format
+        == LogFormat.syslog
+    )
+
+    assert len(parsed) == 2
+
+    accepted_event = parsed[0]
+
+    assert (
+        accepted_event.source_type
+        == "linux_auth"
+    )
+
+    assert (
+        accepted_event.event_code
+        == "linux.auth.ssh.accepted"
+    )
+
+    assert (
+        accepted_event.severity
+        == LogEventSeverity.informational
+    )
+
+    assert (
+        accepted_event.host
+        == "server-01"
+    )
+
+    assert (
+        accepted_event.username
+        == "analyst"
+    )
+
+    assert (
+        accepted_event.source_ip
+        == "192.168.1.25"
+    )
+
+    assert (
+        accepted_event.normalized_event[
+            "authentication_method"
+        ]
+        == "password"
+    )
+
+    assert (
+        accepted_event.normalized_event[
+            "source_port"
+        ]
+        == "52844"
+    )
+
+    assert (
+        accepted_event.normalized_event[
+            "outcome"
+        ]
+        == "success"
+    )
+
+    sudo_event = parsed[1]
+
+    assert (
+        sudo_event.source_type
+        == "linux_auth"
+    )
+
+    assert (
+        sudo_event.event_code
+        == "linux.auth.sudo.command"
+    )
+
+    assert (
+        sudo_event.severity
+        == LogEventSeverity.medium
+    )
+
+    assert (
+        sudo_event.username
+        == "analyst"
+    )
+
+    assert (
+        sudo_event.normalized_event[
+            "target_user"
+        ]
+        == "root"
+    )
+
+    assert (
+        sudo_event.normalized_event[
+            "command"
+        ]
+        == (
+            "/usr/bin/cat "
+            "/etc/shadow"
+        )
+    )
+
+    assert (
+        sudo_event.normalized_event[
+            "action"
+        ]
+        == "privilege_escalation"
+    )
+
+
+def test_parse_failed_linux_ssh_events(
+    tmp_path: Path,
+) -> None:
+    log_path = (
+        tmp_path / "secure"
+    )
+
+    log_path.write_text(
+        (
+            "Jul 24 09:00:00 "
+            "server-02 "
+            "sshd[3001]: "
+            "Failed password for root "
+            "from 198.51.100.40 "
+            "port 44012 ssh2\n"
+            "Jul 24 09:01:00 "
+            "server-02 "
+            "sshd[3002]: "
+            "Invalid user administrator "
+            "from 203.0.113.50 "
+            "port 51222\n"
+        ),
+        encoding="utf-8",
+    )
+
+    (
+        detected_format,
+        parsed_iterator,
+    ) = parse_log_file(
+        path=log_path,
+        original_filename="secure",
+        requested_format=(
+            LogFormat.auto
+        ),
+    )
+
+    parsed = list(
+        parsed_iterator
+    )
+
+    assert (
+        detected_format
+        == LogFormat.syslog
+    )
+
+    assert len(parsed) == 2
+
+    assert (
+        parsed[0].event_code
+        == "linux.auth.ssh.failed"
+    )
+
+    assert (
+        parsed[0].severity
+        == LogEventSeverity.medium
+    )
+
+    assert (
+        parsed[0].username
+        == "root"
+    )
+
+    assert (
+        parsed[0].source_ip
+        == "198.51.100.40"
+    )
+
+    assert (
+        parsed[1].event_code
+        == (
+            "linux.auth.ssh."
+            "invalid_user"
+        )
+    )
+
+    assert (
+        parsed[1].severity
+        == LogEventSeverity.high
+    )
+
+    assert (
+        parsed[1].username
+        == "administrator"
+    )
+
+    assert (
+        parsed[1].source_ip
+        == "203.0.113.50"
     )
 
 
