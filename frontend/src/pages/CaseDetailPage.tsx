@@ -28,6 +28,9 @@ import {
   CaseLogEventExplorer,
 } from '../components/cases/CaseLogEventExplorer'
 import {
+  CaseSecurityFindings,
+} from '../components/cases/CaseSecurityFindings'
+import {
   DeleteCaseDialog,
 } from '../components/cases/DeleteCaseDialog'
 import {
@@ -410,6 +413,12 @@ export function CaseDetailPage() {
 
       <div className="mt-8">
         <CaseEvidencePanel
+          caseId={investigationCase.id}
+        />
+      </div>
+
+      <div className="mt-8">
+        <CaseSecurityFindings
           caseId={investigationCase.id}
         />
       </div>

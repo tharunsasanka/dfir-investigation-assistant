@@ -97,10 +97,11 @@ class LogIngestionJob(Base):
         nullable=False,
     )
 
+    # This name must match the enum type already used by PostgreSQL.
     detected_format: Mapped[LogFormat | None] = mapped_column(
         Enum(
             LogFormat,
-            name="logformat",
+            name="detectedlogformat",
             create_type=False,
         ),
         nullable=True,
