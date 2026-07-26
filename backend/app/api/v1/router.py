@@ -6,6 +6,7 @@ from app.api.v1 import (
     dashboard,
     event_correlations,
     evidence,
+    forensic_timeline,
     log_ingestion,
     security_findings,
 )
@@ -50,4 +51,8 @@ api_router.include_router(
 
 api_router.include_router(
     event_correlations.router,
+)
+
+api_router.include_router(
+    forensic_timeline.router,
 )
