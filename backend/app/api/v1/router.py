@@ -7,6 +7,7 @@ from app.api.v1 import (
     event_correlations,
     evidence,
     forensic_timeline,
+    investigation_summaries,
     log_ingestion,
     security_findings,
 )
@@ -55,4 +56,8 @@ api_router.include_router(
 
 api_router.include_router(
     forensic_timeline.router,
+)
+
+api_router.include_router(
+    investigation_summaries.router,
 )
