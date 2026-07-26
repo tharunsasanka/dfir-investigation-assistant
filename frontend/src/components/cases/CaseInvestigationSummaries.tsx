@@ -26,7 +26,6 @@ import {
   RotateCcw,
   Save,
   ShieldAlert,
-  Sparkles,
   Target,
   UserCheck,
   X,
@@ -50,10 +49,14 @@ import {
   reviewInvestigationSummary,
 } from '../../api/investigationSummaries'
 import { Can } from '../../auth/Can'
+import {
+  InvestigationSummaryGenerationControls,
+} from './InvestigationSummaryGenerationControls'
 import type {
   CreateInvestigationSummaryRevisionRequest,
   InvestigationActionPriority,
   InvestigationSummary,
+  InvestigationSummarySource,
   InvestigationSummarySeverity,
   InvestigationSummaryStatus,
 } from '../../types/investigationSummary'
@@ -360,6 +363,12 @@ export function CaseInvestigationSummaries({
   ] = useState<RevisionFormState>(
     emptyRevisionForm,
   )
+  const [
+    generationSource,
+    setGenerationSource,
+  ] = useState<InvestigationSummarySource>(
+    'deterministic',
+  )
 
   const pageSize = 10
 
@@ -460,9 +469,12 @@ export function CaseInvestigationSummaries({
           caseId,
           {
             generation_source:
-              'deterministic',
+              generationSource,
             provider_name:
-              'deterministic',
+              generationSource ===
+                'local_ai'
+                ? 'ollama'
+                : 'deterministic',
             model_name: '',
             prompt_template_version:
               '1.0.0',
@@ -765,27 +777,19 @@ export function CaseInvestigationSummaries({
         </div>
 
         <Can permission="cases.update">
-          <button
-            type="button"
-            disabled={
+          <InvestigationSummaryGenerationControls
+            source={generationSource}
+            pending={
               generateMutation.isPending
             }
-            onClick={() => {
+            summary={selectedSummary}
+            onSourceChange={
+              setGenerationSource
+            }
+            onGenerate={() => {
               generateMutation.mutate()
             }}
-            className="flex items-center justify-center gap-2 rounded-xl bg-cyan px-5 py-3 text-sm font-semibold text-slate-950 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {generateMutation.isPending ? (
-              <LoaderCircle
-                size={18}
-                className="animate-spin"
-              />
-            ) : (
-              <Sparkles size={18} />
-            )}
-
-            Generate summary
-          </button>
+          />
         </Can>
       </div>
 
