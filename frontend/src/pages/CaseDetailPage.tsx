@@ -22,6 +22,9 @@ import {
   CaseAuditTimeline,
 } from '../components/cases/CaseAuditTimeline'
 import {
+  CaseEventCorrelations,
+} from '../components/cases/CaseEventCorrelations'
+import {
   CaseEvidencePanel,
 } from '../components/cases/CaseEvidencePanel'
 import {
@@ -80,19 +83,16 @@ function getSeverityClasses(
       'bg-emerald-400/10',
       'text-emerald-300',
     ].join(' '),
-
     medium: [
       'border-sky-400/30',
       'bg-sky-400/10',
       'text-sky-300',
     ].join(' '),
-
     high: [
       'border-amber-400/30',
       'bg-amber-400/10',
       'text-amber-300',
     ].join(' '),
-
     critical: [
       'border-red-400/30',
       'bg-red-400/10',
@@ -419,6 +419,12 @@ export function CaseDetailPage() {
 
       <div className="mt-8">
         <CaseSecurityFindings
+          caseId={investigationCase.id}
+        />
+      </div>
+
+      <div className="mt-8">
+        <CaseEventCorrelations
           caseId={investigationCase.id}
         />
       </div>

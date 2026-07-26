@@ -1,9 +1,10 @@
-from fastapi import APIRouter, status
+from fastapi import APIRouter
 
 from app.api.v1 import (
     auth,
     cases,
     dashboard,
+    event_correlations,
     evidence,
     log_ingestion,
     security_findings,
@@ -16,7 +17,6 @@ api_router = APIRouter()
 @api_router.get(
     "/health",
     tags=["health"],
-    status_code=status.HTTP_200_OK,
 )
 def health_check() -> dict[str, str]:
     return {
@@ -24,13 +24,30 @@ def health_check() -> dict[str, str]:
     }
 
 
-api_router.include_router(auth.router)
-api_router.include_router(cases.router)
-api_router.include_router(dashboard.router)
-api_router.include_router(evidence.router)
+api_router.include_router(
+    auth.router,
+)
+
+api_router.include_router(
+    cases.router,
+)
+
+api_router.include_router(
+    dashboard.router,
+)
+
+api_router.include_router(
+    evidence.router,
+)
+
 api_router.include_router(
     log_ingestion.router,
 )
+
 api_router.include_router(
     security_findings.router,
+)
+
+api_router.include_router(
+    event_correlations.router,
 )

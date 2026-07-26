@@ -7,6 +7,11 @@ from app.models.case_audit import (
     CaseAuditEvent,
     CaseAuditEventType,
 )
+from app.models.event_correlation import (
+    EventCorrelation,
+    EventCorrelationMember,
+    EventCorrelationType,
+)
 from app.models.evidence import (
     Evidence,
     EvidenceCustodyEvent,
@@ -34,6 +39,9 @@ __all__ = [
     "CaseStatus",
     "CaseAuditEvent",
     "CaseAuditEventType",
+    "EventCorrelation",
+    "EventCorrelationMember",
+    "EventCorrelationType",
     "Evidence",
     "EvidenceCustodyEvent",
     "EvidenceCustodyEventType",
