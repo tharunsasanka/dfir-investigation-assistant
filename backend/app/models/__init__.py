@@ -18,6 +18,11 @@ from app.models.evidence import (
     EvidenceCustodyEventType,
     EvidenceType,
 )
+from app.models.investigation_summary import (
+    InvestigationSummary,
+    InvestigationSummarySource,
+    InvestigationSummaryStatus,
+)
 from app.models.log_ingestion import (
     LogEventSeverity,
     LogFormat,
@@ -46,6 +51,9 @@ __all__ = [
     "EvidenceCustodyEvent",
     "EvidenceCustodyEventType",
     "EvidenceType",
+    "InvestigationSummary",
+    "InvestigationSummarySource",
+    "InvestigationSummaryStatus",
     "LogEventSeverity",
     "LogFormat",
     "LogIngestionJob",

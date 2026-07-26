@@ -31,6 +31,9 @@ import {
   CaseForensicTimeline,
 } from '../components/cases/CaseForensicTimeline'
 import {
+  CaseInvestigationSummaries,
+} from '../components/cases/CaseInvestigationSummaries'
+import {
   CaseLogEventExplorer,
 } from '../components/cases/CaseLogEventExplorer'
 import {
@@ -437,6 +440,12 @@ export function CaseDetailPage() {
 
       <div className="mt-8">
         <CaseForensicTimeline
+          caseId={investigationCase.id}
+        />
+      </div>
+
+      <div className="mt-8">
+        <CaseInvestigationSummaries
           caseId={investigationCase.id}
         />
       </div>
