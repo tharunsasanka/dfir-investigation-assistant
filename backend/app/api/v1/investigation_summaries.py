@@ -25,12 +25,14 @@ from app.schemas.investigation_summary import (
     InvestigationSummaryRevisionRequest,
     InvestigationSummaryReviewRequest,
 )
+from app.services.investigation_summary_generation_service import (
+    generate_investigation_summary,
+)
 from app.services.investigation_summary_service import (
     InvestigationSummaryNotFoundError,
     InvestigationSummaryStateError,
     UnsupportedSummaryProviderError,
     create_analyst_revision,
-    generate_investigation_summary,
     get_investigation_summary,
     list_case_investigation_summaries,
     review_investigation_summary,
