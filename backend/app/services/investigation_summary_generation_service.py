@@ -26,6 +26,11 @@ from app.services.ai_summary_provider import (
     AISummarySafeContext,
     create_local_ai_summary_provider,
 )
+from app.services.ai_summary_validation_service import (
+    AISummaryValidationError,
+    AISummaryValidationResult,
+    validate_ai_summary_output_or_raise,
+)
 from app.services.forensic_timeline_service import (
     build_all_timeline_entries,
 )
@@ -433,12 +438,52 @@ def build_provider_audit_metadata(
     }
 
 
+def build_validated_provider_audit_metadata(
+    result: AISummaryProviderResult,
+    validation_result:
+        AISummaryValidationResult,
+) -> dict[str, Any]:
+    metadata = (
+        build_provider_audit_metadata(
+            result
+        )
+    )
+
+    metadata.update(
+        {
+            "validation_passed": True,
+            "validation_issue_count":
+                len(
+                    validation_result
+                    .issues
+                ),
+            "validation_checked_entity_count":
+                validation_result
+                .checked_entity_count,
+            "validation_unsupported_entity_count":
+                validation_result
+                .unsupported_entity_count,
+            "validation_unsupported_claim_count":
+                validation_result
+                .unsupported_claim_count,
+            "validation_count_mismatch_count":
+                validation_result
+                .count_mismatch_count,
+        }
+    )
+
+    return metadata
+
+
 def build_fallback_audit_metadata(
-    error: AISummaryProviderError,
+    error: Exception,
     configured_provider: str,
     configured_model: str,
 ) -> dict[str, Any]:
-    return {
+    metadata: dict[
+        str,
+        Any,
+    ] = {
         "local_ai_used": False,
         "fallback_applied": True,
         "requested_provider":
@@ -450,6 +495,49 @@ def build_fallback_audit_metadata(
         "fallback_reason":
             str(error),
     }
+
+    if isinstance(
+        error,
+        AISummaryValidationError,
+    ):
+        validation_result = (
+            error.result
+        )
+
+        metadata.update(
+            {
+                "validation_passed":
+                    False,
+                "validation_issue_count":
+                    len(
+                        validation_result
+                        .issues
+                    ),
+                "validation_issue_codes":
+                    sorted(
+                        {
+                            issue.code
+                            for issue
+                            in validation_result
+                            .issues
+                        }
+                    ),
+                "validation_checked_entity_count":
+                    validation_result
+                    .checked_entity_count,
+                "validation_unsupported_entity_count":
+                    validation_result
+                    .unsupported_entity_count,
+                "validation_unsupported_claim_count":
+                    validation_result
+                    .unsupported_claim_count,
+                "validation_count_mismatch_count":
+                    validation_result
+                    .count_mismatch_count,
+            }
+        )
+
+    return metadata
 
 
 def apply_local_ai_generation(
@@ -531,7 +619,17 @@ def apply_local_ai_generation(
             context
         )
 
-    except AISummaryProviderError as error:
+        validation_result = (
+            validate_ai_summary_output_or_raise(
+                context,
+                result.output,
+            )
+        )
+
+    except (
+        AISummaryProviderError,
+        AISummaryValidationError,
+    ) as error:
         if (
             not settings
             .ai_local_fallback_to_deterministic
@@ -584,8 +682,9 @@ def apply_local_ai_generation(
         .local_ai,
         result.provider_name,
         result.model_name,
-        build_provider_audit_metadata(
-            result
+        build_validated_provider_audit_metadata(
+            result,
+            validation_result,
         ),
     )
 

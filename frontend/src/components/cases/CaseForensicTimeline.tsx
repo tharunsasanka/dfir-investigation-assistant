@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { isAxiosError } from 'axios'
 import {
-  Activity,
   AlertTriangle,
   ChevronDown,
   ChevronLeft,
@@ -17,7 +16,6 @@ import {
   RefreshCw,
   Search,
   ShieldAlert,
-  UserRound,
   XCircle,
 } from 'lucide-react'
 import { useState } from 'react'
@@ -362,7 +360,7 @@ function TimelineMetadata({
               entry.mitre_technique_name,
             ]
               .filter(Boolean)
-              .join(' — ')
+              .join(' â€” ')
           : '',
     },
     {
