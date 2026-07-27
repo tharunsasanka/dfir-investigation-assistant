@@ -8,6 +8,9 @@ from typing import Any
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
+from app.services.summary_traceability_transaction_service import (
+    commit_summary_with_traceability,
+)
 
 from app.models.case import Case
 from app.models.event_correlation import (
@@ -1791,8 +1794,13 @@ def generate_investigation_summary(
 
         summary.generation_error = ""
 
-        db.commit()
-        db.refresh(summary)
+        commit_summary_with_traceability(
+            db=db,
+            summary=summary,
+            investigation_case=(
+                investigation_case
+            ),
+        )
 
         return summary
 
@@ -2134,8 +2142,21 @@ def create_analyst_revision(
         ),
     )
 
+    investigation_case = (
+        get_case_or_raise(
+            db,
+            parent_summary.case_id,
+        )
+    )
+
     db.add(revision)
-    db.commit()
-    db.refresh(revision)
+
+    commit_summary_with_traceability(
+        db=db,
+        summary=revision,
+        investigation_case=(
+            investigation_case
+        ),
+    )
 
     return revision
