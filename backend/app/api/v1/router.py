@@ -10,6 +10,7 @@ from app.api.v1 import (
     investigation_summaries,
     log_ingestion,
     security_findings,
+    summary_traceability,
 )
 
 

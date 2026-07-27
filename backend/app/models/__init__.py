@@ -35,6 +35,9 @@ from app.models.role import Role
 from app.models.security_finding import (
     SecurityFinding,
 )
+from app.models.summary_traceability import (
+    InvestigationSummaryTraceabilityReport,
+)
 from app.models.user import User
 
 
@@ -54,6 +57,7 @@ __all__ = [
     "InvestigationSummary",
     "InvestigationSummarySource",
     "InvestigationSummaryStatus",
+    "InvestigationSummaryTraceabilityReport",
     "LogEventSeverity",
     "LogFormat",
     "LogIngestionJob",
