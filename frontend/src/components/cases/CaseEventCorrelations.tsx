@@ -20,7 +20,6 @@ import {
   Play,
   RefreshCw,
   Search,
-  ShieldAlert,
   Target,
   XCircle,
 } from 'lucide-react'
@@ -1160,7 +1159,7 @@ export function CaseEventCorrelations({
 
                               {correlation
                                 .mitre_technique_name
-                                ? ` — ${correlation.mitre_technique_name}`
+                                ? ` â€” ${correlation.mitre_technique_name}`
                                 : ''}
                             </dd>
                           </div>

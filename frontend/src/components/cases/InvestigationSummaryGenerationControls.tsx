@@ -39,7 +39,7 @@ const generationOptions: Array<{
     value: 'local_ai',
     label: 'Local AI assisted',
     description:
-      'Use the locally configured Ollama provider to improve the executive summary and technical narrative.',
+      'Use the locally configured AI provider to improve the executive summary and technical narrative.',
   },
 ]
 
@@ -72,11 +72,47 @@ function getStringParameter(
 function getBooleanParameter(
   summary: InvestigationSummary,
   key: string,
-): boolean {
-  return (
+): boolean | null {
+  const value =
     summary.generation_parameters[
       key
-    ] === true
+    ]
+
+  return typeof value === 'boolean'
+    ? value
+    : null
+}
+
+function getNumberParameter(
+  summary: InvestigationSummary,
+  key: string,
+): number {
+  const value =
+    summary.generation_parameters[
+      key
+    ]
+
+  return typeof value === 'number'
+    ? value
+    : 0
+}
+
+function getStringArrayParameter(
+  summary: InvestigationSummary,
+  key: string,
+): string[] {
+  const value =
+    summary.generation_parameters[
+      key
+    ]
+
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return value.filter(
+    (item): item is string =>
+      typeof item === 'string',
   )
 }
 
@@ -111,18 +147,95 @@ export function InvestigationSummaryGenerationControls({
     ? getBooleanParameter(
         summary,
         'fallback_applied',
-      )
+      ) === true
     : false
 
   const localAiUsed = summary
     ? getBooleanParameter(
         summary,
         'local_ai_used',
-      )
+      ) === true
     : false
 
+  const validationPassed = summary
+    ? getBooleanParameter(
+        summary,
+        'validation_passed',
+      )
+    : null
+
+  const validationIssueCount = summary
+    ? getNumberParameter(
+        summary,
+        'validation_issue_count',
+      )
+    : 0
+
+  const checkedEntityCount = summary
+    ? getNumberParameter(
+        summary,
+        'validation_checked_entity_count',
+      )
+    : 0
+
+  const unsupportedEntityCount = summary
+    ? getNumberParameter(
+        summary,
+        'validation_unsupported_entity_count',
+      )
+    : 0
+
+  const unsupportedClaimCount = summary
+    ? getNumberParameter(
+        summary,
+        'validation_unsupported_claim_count',
+      )
+    : 0
+
+  const countMismatchCount = summary
+    ? getNumberParameter(
+        summary,
+        'validation_count_mismatch_count',
+      )
+    : 0
+
+  const validationIssueCodes = summary
+    ? getStringArrayParameter(
+        summary,
+        'validation_issue_codes',
+      )
+    : []
+
+  const fallbackReason = summary
+    ? getStringParameter(
+        summary,
+        'fallback_reason',
+      )
+    : ''
+
+  const showValidationStatus =
+    requestedSource === 'local_ai' ||
+    validationPassed !== null ||
+    fallbackApplied
+
+  const validationStatus =
+    validationPassed === true
+      ? 'Passed'
+      : validationPassed === false
+        ? 'Failed'
+        : fallbackApplied
+          ? 'Not performed'
+          : 'Not recorded'
+
+  const validationClasses =
+    validationPassed === true
+      ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-200'
+      : validationPassed === false
+        ? 'border-red-400/30 bg-red-400/10 text-red-200'
+        : 'border-amber-400/30 bg-amber-400/10 text-amber-200'
+
   return (
-    <div className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 xl:w-[390px]">
+    <div className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 xl:w-[410px]">
       <label
         htmlFor="summary-generation-source"
         className="text-xs font-semibold uppercase tracking-wider text-slate-500"
@@ -166,11 +279,11 @@ export function InvestigationSummaryGenerationControls({
           />
 
           <p className="text-xs leading-5 text-violet-100/75">
-            Local AI availability and model
-            selection are controlled by the
-            backend. A provider failure can
-            automatically use the deterministic
-            fallback.
+            Local AI output is checked against
+            stored entities, counts, event
+            codes, MITRE mappings, and
+            high-risk claims before it can be
+            saved.
           </p>
         </div>
       )}
@@ -207,7 +320,7 @@ export function InvestigationSummaryGenerationControls({
                 <Cpu size={15} />
 
                 <p className="text-xs uppercase tracking-wider">
-                  Requested
+                  Requested source
                 </p>
               </div>
 
@@ -223,7 +336,7 @@ export function InvestigationSummaryGenerationControls({
                 <ShieldCheck size={15} />
 
                 <p className="text-xs uppercase tracking-wider">
-                  Effective
+                  Effective source
                 </p>
               </div>
 
@@ -259,6 +372,99 @@ export function InvestigationSummaryGenerationControls({
             </div>
           </dl>
 
+          {showValidationStatus && (
+            <div className="mt-5 rounded-xl border border-white/10 bg-slate-950/30 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  Hallucination guardrail
+                </p>
+
+                <span
+                  className={[
+                    'rounded-full border px-2.5 py-1 text-xs font-semibold',
+                    validationClasses,
+                  ].join(' ')}
+                >
+                  {validationStatus}
+                </span>
+              </div>
+
+              <dl className="mt-4 grid grid-cols-2 gap-3 text-xs">
+                <div className="rounded-lg border border-white/10 p-3">
+                  <dt className="text-slate-500">
+                    Checked entities
+                  </dt>
+
+                  <dd className="mt-1 text-lg font-bold text-slate-200">
+                    {checkedEntityCount}
+                  </dd>
+                </div>
+
+                <div className="rounded-lg border border-white/10 p-3">
+                  <dt className="text-slate-500">
+                    Validation issues
+                  </dt>
+
+                  <dd className="mt-1 text-lg font-bold text-slate-200">
+                    {validationIssueCount}
+                  </dd>
+                </div>
+
+                <div className="rounded-lg border border-white/10 p-3">
+                  <dt className="text-slate-500">
+                    Unsupported entities
+                  </dt>
+
+                  <dd className="mt-1 text-lg font-bold text-slate-200">
+                    {unsupportedEntityCount}
+                  </dd>
+                </div>
+
+                <div className="rounded-lg border border-white/10 p-3">
+                  <dt className="text-slate-500">
+                    Unsupported claims
+                  </dt>
+
+                  <dd className="mt-1 text-lg font-bold text-slate-200">
+                    {unsupportedClaimCount}
+                  </dd>
+                </div>
+
+                <div className="col-span-2 rounded-lg border border-white/10 p-3">
+                  <dt className="text-slate-500">
+                    Count mismatches
+                  </dt>
+
+                  <dd className="mt-1 text-lg font-bold text-slate-200">
+                    {countMismatchCount}
+                  </dd>
+                </div>
+              </dl>
+
+              {validationIssueCodes.length >
+                0 && (
+                <div className="mt-4">
+                  <p className="text-xs text-slate-500">
+                    Detected issue types
+                  </p>
+
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {validationIssueCodes.map(
+                      (code) => (
+                        <span
+                          key={code}
+                          className="rounded-lg border border-red-400/20 bg-red-400/10 px-2.5 py-1 text-xs text-red-200"
+                        >
+                          {formatLabel(code)}
+                        </span>
+                      ),
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {fallbackApplied && (
             <div className="mt-4 flex items-start gap-3 rounded-xl border border-amber-400/30 bg-amber-400/10 p-3">
               <CircleAlert
@@ -266,15 +472,29 @@ export function InvestigationSummaryGenerationControls({
                 className="mt-0.5 shrink-0 text-amber-300"
               />
 
-              <p className="text-xs leading-5 text-amber-100/80">
-                Local AI was requested, but the
-                saved version was produced using
-                the deterministic fallback.
-              </p>
+              <div>
+                <p className="text-xs font-semibold text-amber-100">
+                  Deterministic fallback applied
+                </p>
+
+                <p className="mt-1 text-xs leading-5 text-amber-100/75">
+                  The requested local AI result
+                  was not saved. The stored
+                  version uses the deterministic
+                  summary instead.
+                </p>
+
+                {fallbackReason && (
+                  <p className="mt-2 text-xs leading-5 text-amber-200/60">
+                    {fallbackReason}
+                  </p>
+                )}
+              </div>
             </div>
           )}
 
           {localAiUsed &&
+            validationPassed === true &&
             !fallbackApplied && (
               <div className="mt-4 flex items-start gap-3 rounded-xl border border-emerald-400/30 bg-emerald-400/10 p-3">
                 <ShieldCheck
@@ -283,10 +503,10 @@ export function InvestigationSummaryGenerationControls({
                 />
 
                 <p className="text-xs leading-5 text-emerald-100/80">
-                  The narrative was processed by
-                  the configured local AI provider
-                  and remains pending analyst
-                  validation.
+                  The local AI narrative passed
+                  automated factual validation.
+                  Analyst review is still
+                  required before approval.
                 </p>
               </div>
             )}
