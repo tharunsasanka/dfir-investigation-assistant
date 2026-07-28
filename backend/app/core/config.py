@@ -47,20 +47,16 @@ class Settings(BaseSettings):
         "HS512",
     ] = "HS256"
 
-    access_token_expire_minutes: int = (
-        Field(
-            default=30,
-            ge=5,
-            le=120,
-        )
+    access_token_expire_minutes: int = Field(
+        default=30,
+        ge=5,
+        le=120,
     )
 
-    refresh_token_expire_days: int = (
-        Field(
-            default=7,
-            ge=1,
-            le=30,
-        )
+    refresh_token_expire_days: int = Field(
+        default=7,
+        ge=1,
+        le=30,
     )
 
     cors_origins: str = (
@@ -86,18 +82,34 @@ class Settings(BaseSettings):
         le=63072000,
     )
 
-    max_failed_login_attempts: int = (
-        Field(
-            default=5,
-            ge=3,
-            le=20,
-        )
+    max_failed_login_attempts: int = Field(
+        default=5,
+        ge=3,
+        le=20,
     )
 
     login_lockout_minutes: int = Field(
         default=15,
         ge=1,
         le=1440,
+    )
+
+    login_rate_limit_attempts: int = Field(
+        default=20,
+        ge=3,
+        le=200,
+    )
+
+    login_rate_limit_window_seconds: int = Field(
+        default=300,
+        ge=60,
+        le=3600,
+    )
+
+    login_rate_limit_block_seconds: int = Field(
+        default=900,
+        ge=60,
+        le=86400,
     )
 
     ai_local_enabled: bool = False
@@ -120,36 +132,28 @@ class Settings(BaseSettings):
         "ollama"
     )
 
-    ai_local_timeout_seconds: float = (
-        Field(
-            default=60.0,
-            ge=1.0,
-            le=300.0,
-        )
+    ai_local_timeout_seconds: float = Field(
+        default=60.0,
+        ge=1.0,
+        le=300.0,
     )
 
-    ai_local_connect_timeout_seconds: (
-        float
-    ) = Field(
+    ai_local_connect_timeout_seconds: float = Field(
         default=5.0,
         ge=0.5,
         le=60.0,
     )
 
-    ai_local_max_prompt_chars: int = (
-        Field(
-            default=30000,
-            ge=1000,
-            le=200000,
-        )
+    ai_local_max_prompt_chars: int = Field(
+        default=30000,
+        ge=1000,
+        le=200000,
     )
 
-    ai_local_max_response_bytes: int = (
-        Field(
-            default=262144,
-            ge=4096,
-            le=2097152,
-        )
+    ai_local_max_response_bytes: int = Field(
+        default=262144,
+        ge=4096,
+        le=2097152,
     )
 
     ai_local_temperature: float = Field(
@@ -158,9 +162,7 @@ class Settings(BaseSettings):
         le=2.0,
     )
 
-    ai_local_fallback_to_deterministic: (
-        bool
-    ) = True
+    ai_local_fallback_to_deterministic: bool = True
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -233,6 +235,7 @@ class Settings(BaseSettings):
     ) -> list[str]:
         return [
             "Content-Disposition",
+            "Retry-After",
             "X-Document-SHA256",
         ]
 

@@ -1,21 +1,31 @@
-import { useQueryClient } from '@tanstack/react-query'
+import {
+  useQueryClient,
+} from '@tanstack/react-query'
 import {
   Activity,
   BriefcaseBusiness,
   LayoutDashboard,
+  LoaderCircle,
   LogOut,
   Settings,
   ShieldCheck,
   UserCircle,
 } from 'lucide-react'
 import {
+  useState,
+} from 'react'
+import {
   NavLink,
   Outlet,
   useNavigate,
 } from 'react-router-dom'
 
-import { useAuth } from '../../auth/AuthContext'
-import { hasPermission } from '../../auth/permissions'
+import {
+  useAuth,
+} from '../../auth/AuthContext'
+import {
+  hasPermission,
+} from '../../auth/permissions'
 
 const links = [
   {
@@ -50,27 +60,54 @@ export function AppShell() {
     signOut,
   } = useAuth()
 
-  const navigate = useNavigate()
-  const queryClient = useQueryClient()
+  const [
+    isSigningOut,
+    setIsSigningOut,
+  ] = useState(false)
 
-  const visibleLinks = links.filter((link) => {
-    if (link.permission === null) {
-      return true
+  const navigate =
+    useNavigate()
+
+  const queryClient =
+    useQueryClient()
+
+  const visibleLinks =
+    links.filter((link) => {
+      if (
+        link.permission
+        === null
+      ) {
+        return true
+      }
+
+      return hasPermission(
+        user,
+        link.permission,
+      )
+    })
+
+  async function handleSignOut():
+  Promise<void> {
+    if (isSigningOut) {
+      return
     }
 
-    return hasPermission(
-      user,
-      link.permission,
-    )
-  })
+    setIsSigningOut(true)
 
-  function handleSignOut(): void {
-    signOut()
-    queryClient.clear()
+    try {
+      await signOut()
 
-    navigate('/login', {
-      replace: true,
-    })
+      queryClient.clear()
+
+      navigate(
+        '/login',
+        {
+          replace: true,
+        },
+      )
+    } finally {
+      setIsSigningOut(false)
+    }
   }
 
   return (
@@ -102,7 +139,9 @@ export function AppShell() {
               <NavLink
                 key={to}
                 to={to}
-                className={({ isActive }) =>
+                className={({
+                  isActive,
+                }) =>
                   [
                     'flex items-center gap-3 rounded-xl',
                     'px-3 py-3 text-sm transition',
@@ -129,7 +168,8 @@ export function AppShell() {
 
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold">
-                  {user?.full_name ?? 'Authorized Analyst'}
+                  {user?.full_name ??
+                    'Authorized Analyst'}
                 </p>
 
                 <p className="mt-1 truncate text-xs text-slate-400">
@@ -137,7 +177,11 @@ export function AppShell() {
                 </p>
 
                 <p className="mt-2 text-xs capitalize text-cyan">
-                  {user?.roles[0]?.name.replace(/_/g, ' ') ??
+                  {user?.roles[0]?.name
+                    .replace(
+                      /_/g,
+                      ' ',
+                    ) ??
                     'Authenticated user'}
                 </p>
               </div>
@@ -145,11 +189,28 @@ export function AppShell() {
 
             <button
               type="button"
-              onClick={handleSignOut}
-              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-sm text-slate-300 transition hover:border-red-400/30 hover:bg-red-400/10 hover:text-red-200"
+              onClick={() => {
+                void handleSignOut()
+              }}
+              disabled={
+                isSigningOut
+              }
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-sm text-slate-300 transition hover:border-red-400/30 hover:bg-red-400/10 hover:text-red-200 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <LogOut size={16} />
-              Sign out
+              {isSigningOut ? (
+                <>
+                  <LoaderCircle
+                    size={16}
+                    className="animate-spin"
+                  />
+                  Signing out...
+                </>
+              ) : (
+                <>
+                  <LogOut size={16} />
+                  Sign out
+                </>
+              )}
             </button>
           </div>
         </div>
