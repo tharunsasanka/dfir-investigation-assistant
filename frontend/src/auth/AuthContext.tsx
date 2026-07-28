@@ -31,6 +31,7 @@ type AuthContextValue = {
   isLoading: boolean
   signIn: (credentials: LoginRequest) => Promise<void>
   signOut: () => void
+  refreshUser: () => Promise<User | null>
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(
@@ -62,6 +63,33 @@ export function AuthProvider({
     [],
   )
 
+  const refreshUser = useCallback(
+    async (): Promise<User | null> => {
+      const accessToken = getAccessToken()
+
+      if (!accessToken) {
+        signOut()
+        return null
+      }
+
+      try {
+        const currentUser = await getCurrentUser(
+          accessToken,
+        )
+
+        setUser(currentUser)
+
+        return currentUser
+      } catch {
+        signOut()
+        return null
+      }
+    },
+    [
+      signOut,
+    ],
+  )
+
   useEffect(() => {
     let isMounted = true
 
@@ -81,7 +109,9 @@ export function AuthProvider({
       }
 
       try {
-        const currentUser = await getCurrentUser(accessToken)
+        const currentUser = await getCurrentUser(
+          accessToken,
+        )
 
         if (isMounted) {
           setUser(currentUser)
@@ -92,7 +122,9 @@ export function AuthProvider({
             refresh_token: refreshToken,
           })
 
-          saveAccessToken(refreshedToken.access_token)
+          saveAccessToken(
+            refreshedToken.access_token,
+          )
 
           const currentUser = await getCurrentUser(
             refreshedToken.access_token,
@@ -129,12 +161,14 @@ export function AuthProvider({
       isLoading,
       signIn,
       signOut,
+      refreshUser,
     }),
     [
       user,
       isLoading,
       signIn,
       signOut,
+      refreshUser,
     ],
   )
 

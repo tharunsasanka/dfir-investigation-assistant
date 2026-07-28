@@ -11,7 +11,7 @@ import { DashboardPage } from '../pages/DashboardPage'
 import { InvestigationPage } from '../pages/InvestigationPage'
 import { LandingPage } from '../pages/LandingPage'
 import { LoginPage } from '../pages/LoginPage'
-import { PlaceholderPage } from '../pages/PlaceholderPage'
+import { SettingsPage } from '../pages/SettingsPage'
 import { PermissionRoute } from './PermissionRoute'
 import { ProtectedRoute } from './ProtectedRoute'
 
@@ -64,9 +64,7 @@ export function AppRoutes() {
 
           <Route
             path="/settings"
-            element={
-              <PlaceholderPage title="Settings" />
-            }
+            element={<SettingsPage />}
           />
         </Route>
       </Route>
