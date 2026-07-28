@@ -50,120 +50,164 @@ EVIDENCE_ID = uuid.uuid4()
 
 
 def make_summary_response():
-    return (
-        InvestigationSummaryResponse
-        .model_construct(
-            id=SUMMARY_ID,
-            case_id=CASE_ID,
-            version_number=3,
-            title="Investigation Summary",
-            executive_summary=(
-                "Suspicious activity was "
-                "identified."
-            ),
-            technical_narrative=(
-                "The investigation requires "
-                "analyst validation."
-            ),
-            technical_findings=[],
-            incident_scope={},
-            mitre_coverage={},
-            evidence_references=[
-                {
-                    "evidence_id":
+    return InvestigationSummaryResponse(
+        id=SUMMARY_ID,
+        case_id=CASE_ID,
+        parent_summary_id=None,
+        version_number=3,
+        status="approved",
+        generation_source="deterministic",
+        title="Investigation Summary",
+        executive_summary=(
+            "Suspicious activity was "
+            "identified."
+        ),
+        technical_narrative=(
+            "The investigation requires "
+            "analyst validation."
+        ),
+        technical_findings=[],
+        incident_scope={},
+        mitre_coverage={},
+        evidence_references=[
+            {
+                "evidence_id":
+                    EVIDENCE_ID,
+                "original_filename":
+                    "windows-events.json",
+                "sha256":
+                    "a" * 64,
+            }
+        ],
+        recommended_actions=[
+            {
+                "priority":
+                    "short_term",
+                "title":
+                    "Review activity",
+                "description":
+                    "Review the recorded activity against the original evidence.",
+                "rationale":
+                    "The activity requires analyst validation.",
+                "related_rule_ids":
+                    [],
+                "related_mitre_technique_ids":
+                    [],
+                "related_evidence_ids":
+                    [
                         EVIDENCE_ID,
-                    "original_filename":
-                        "windows-events.json",
-                    "sha256":
-                        "a" * 64,
-                }
-            ],
-            recommended_actions=[
-                {
-                    "title":
-                        "Review activity",
-                }
-            ],
-            verified_facts=[],
-            assumptions=[
-                {
-                    "statement":
-                        "Timestamp is valid.",
-                }
-            ],
-            limitations=[
-                "Additional evidence may be required."
-            ],
-        )
+                    ],
+            }
+        ],
+        verified_facts=[],
+        assumptions=[
+            {
+                "statement":
+                    "Timestamp is valid.",
+                "reason":
+                    "The source timestamp requires analyst validation.",
+                "confidence":
+                    80,
+            }
+        ],
+        limitations=[
+            "Additional evidence may be required."
+        ],
+        confidence_score=85,
+        provider_name="deterministic",
+        model_name="",
+        prompt_template_version="1.0.0",
+        generation_parameters={},
+        source_snapshot={},
+        source_snapshot_sha256=(
+            "d" * 64
+        ),
+        output_sha256=(
+            "c" * 64
+        ),
+        requested_by_user_id=(
+            USER_ID
+        ),
+        reviewed_by_user_id=None,
+        review_notes="",
+        generation_error="",
+        generation_started_at=(
+            BASE_TIME
+        ),
+        generation_completed_at=(
+            BASE_TIME
+        ),
+        reviewed_at=None,
+        created_at=BASE_TIME,
+        updated_at=BASE_TIME,
     )
-
 
 def make_traceability_response():
-    return (
-        InvestigationSummaryTraceabilityResponse
-        .model_construct(
-            id=TRACEABILITY_ID,
-            investigation_summary_id=(
-                SUMMARY_ID
-            ),
-            case_id=CASE_ID,
-            schema_version="1.0.0",
-            claims=[
-                {
-                    "claim_id":
-                        "claim-001",
-                    "section":
-                        "technical_finding",
-                    "ordinal":
-                        0,
-                    "text":
-                        "Suspicious activity was identified.",
-                    "support_level":
-                        "direct",
-                    "supported":
-                        True,
-                    "citations": [
-                        {
-                            "citation_id":
-                                "citation-001",
-                            "source_type":
-                                "evidence",
-                            "source_id":
-                                str(EVIDENCE_ID),
-                            "evidence_id":
-                                str(EVIDENCE_ID),
-                            "label":
-                                "windows-events.json",
-                            "relationship":
-                                "Supports the claim",
-                            "event_time":
-                                BASE_TIME.isoformat(),
-                            "integrity_sha256":
-                                "a" * 64,
-                            "metadata":
-                                {},
-                        }
-                    ],
-                    "unsupported_reason":
-                        "",
-                }
-            ],
-            total_claim_count=1,
-            supported_claim_count=1,
-            unsupported_claim_count=0,
-            direct_support_count=1,
-            derived_support_count=0,
-            contextual_support_count=0,
-            citation_count=1,
-            generated_at=BASE_TIME,
-            report_sha256="b" * 64,
-            source_summary_output_sha256=(
-                "c" * 64
-            ),
-            created_at=BASE_TIME,
-        )
+    return InvestigationSummaryTraceabilityResponse(
+        id=TRACEABILITY_ID,
+        investigation_summary_id=(
+            SUMMARY_ID
+        ),
+        case_id=CASE_ID,
+        schema_version="1.0.0",
+        claims=[
+            {
+                "claim_id":
+                    "claim-001",
+                "section":
+                    "technical_finding",
+                "ordinal":
+                    0,
+                "text":
+                    "Suspicious activity was identified.",
+                "support_level":
+                    "direct",
+                "supported":
+                    True,
+                "citations": [
+                    {
+                        "citation_id":
+                            "citation-001",
+                        "source_type":
+                            "evidence",
+                        "source_id":
+                            str(
+                                EVIDENCE_ID
+                            ),
+                        "evidence_id":
+                            str(
+                                EVIDENCE_ID
+                            ),
+                        "label":
+                            "windows-events.json",
+                        "relationship":
+                            "Supports the claim",
+                        "event_time":
+                            BASE_TIME,
+                        "integrity_sha256":
+                            "a" * 64,
+                        "metadata":
+                            {},
+                    }
+                ],
+                "unsupported_reason":
+                    "",
+            }
+        ],
+        total_claim_count=1,
+        supported_claim_count=1,
+        unsupported_claim_count=0,
+        direct_support_count=1,
+        derived_support_count=0,
+        contextual_support_count=0,
+        citation_count=1,
+        generated_at=BASE_TIME,
+        report_sha256="b" * 64,
+        source_summary_output_sha256=(
+            "c" * 64
+        ),
+        created_at=BASE_TIME,
     )
-
 
 def make_integrity_response():
     return SummaryTraceabilityIntegrityResponse(
