@@ -1,17 +1,18 @@
 from fastapi import APIRouter
 
 from app.api.v1 import (
+    administration,
     auth,
     cases,
     dashboard,
     event_correlations,
     evidence,
     forensic_timeline,
+    investigation_reports,
     investigation_summaries,
     log_ingestion,
     security_findings,
     summary_traceability,
-    investigation_reports,
 )
 
 
@@ -30,6 +31,10 @@ def health_check() -> dict[str, str]:
 
 api_router.include_router(
     auth.router,
+)
+
+api_router.include_router(
+    administration.router,
 )
 
 api_router.include_router(
