@@ -23,6 +23,7 @@ import { Link } from 'react-router-dom'
 import { getCases } from '../api/cases'
 import { Can } from '../auth/Can'
 import { CreateCaseForm } from '../components/cases/CreateCaseForm'
+import { OpenInvestigationWorkspaceButton } from '../components/cases/OpenInvestigationWorkspaceButton'
 import type {
   CaseSeverity,
   CaseStatus,
@@ -82,25 +83,39 @@ const statusOptions: Array<{
   },
 ]
 
-function formatDate(dateValue: string): string {
-  return new Intl.DateTimeFormat('en-GB', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(new Date(dateValue))
+function formatDate(
+  dateValue: string,
+): string {
+  return new Intl.DateTimeFormat(
+    'en-GB',
+    {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    },
+  ).format(
+    new Date(dateValue),
+  )
 }
 
-function formatLabel(value: string): string {
+function formatLabel(
+  value: string,
+): string {
   return value
     .replace(/_/g, ' ')
-    .replace(/\b\w/g, (character) =>
-      character.toUpperCase(),
+    .replace(
+      /\b\w/g,
+      (character) =>
+        character.toUpperCase(),
     )
 }
 
 function getSeverityClasses(
   severity: CaseSeverity,
 ): string {
-  const classes: Record<CaseSeverity, string> = {
+  const classes: Record<
+    CaseSeverity,
+    string
+  > = {
     low: [
       'border-emerald-400/30',
       'bg-emerald-400/10',
@@ -132,7 +147,10 @@ function getSeverityClasses(
 function getStatusClasses(
   status: CaseStatus,
 ): string {
-  const classes: Record<CaseStatus, string> = {
+  const classes: Record<
+    CaseStatus,
+    string
+  > = {
     open: 'text-cyan',
     investigating: 'text-amber-300',
     review: 'text-violet-300',
@@ -143,20 +161,34 @@ function getStatusClasses(
 }
 
 export function CasesPage() {
-  const [searchInput, setSearchInput] =
-    useState('')
+  const [
+    searchInput,
+    setSearchInput,
+  ] = useState('')
 
-  const [search, setSearch] =
-    useState('')
+  const [
+    search,
+    setSearch,
+  ] = useState('')
 
-  const [severity, setSeverity] =
-    useState<'' | CaseSeverity>('')
+  const [
+    severity,
+    setSeverity,
+  ] = useState<
+    '' | CaseSeverity
+  >('')
 
-  const [caseStatus, setCaseStatus] =
-    useState<'' | CaseStatus>('')
+  const [
+    caseStatus,
+    setCaseStatus,
+  ] = useState<
+    '' | CaseStatus
+  >('')
 
-  const [page, setPage] =
-    useState(1)
+  const [
+    page,
+    setPage,
+  ] = useState(1)
 
   const [
     isCreateFormOpen,
@@ -178,12 +210,16 @@ export function CasesPage() {
       getCases({
         page,
         page_size: PAGE_SIZE,
-        search: search || undefined,
-        severity: severity || undefined,
-        status: caseStatus || undefined,
+        search:
+          search || undefined,
+        severity:
+          severity || undefined,
+        status:
+          caseStatus || undefined,
       }),
 
-    placeholderData: keepPreviousData,
+    placeholderData:
+      keepPreviousData,
   })
 
   function handleSearch(
@@ -192,7 +228,9 @@ export function CasesPage() {
     event.preventDefault()
 
     setPage(1)
-    setSearch(searchInput.trim())
+    setSearch(
+      searchInput.trim(),
+    )
   }
 
   function clearFilters(): void {
@@ -203,15 +241,21 @@ export function CasesPage() {
     setPage(1)
   }
 
-  const data = casesQuery.data
-  const cases = data?.items ?? []
-  const totalPages = data?.pages ?? 0
+  const data =
+    casesQuery.data
 
-  const hasActiveFilters = Boolean(
-    search ||
-    severity ||
-    caseStatus,
-  )
+  const cases =
+    data?.items ?? []
+
+  const totalPages =
+    data?.pages ?? 0
+
+  const hasActiveFilters =
+    Boolean(
+      search
+      || severity
+      || caseStatus,
+    )
 
   return (
     <section>
@@ -227,7 +271,8 @@ export function CasesPage() {
 
           <p className="mt-2 text-sm text-slate-400">
             View, search, filter, and create
-            investigation cases stored in PostgreSQL.
+            investigation cases stored in
+            PostgreSQL.
           </p>
         </div>
 
@@ -244,7 +289,9 @@ export function CasesPage() {
             <button
               type="button"
               onClick={() => {
-                setIsCreateFormOpen(true)
+                setIsCreateFormOpen(
+                  true,
+                )
               }}
               className="flex items-center gap-2 rounded-xl bg-cyan px-4 py-2 text-sm font-semibold text-slate-950 transition hover:brightness-110"
             >
@@ -257,7 +304,9 @@ export function CasesPage() {
 
       <div className="glass mt-8 rounded-2xl p-5">
         <form
-          onSubmit={handleSearch}
+          onSubmit={
+            handleSearch
+          }
           className="grid gap-4 lg:grid-cols-[1fr_190px_190px_auto]"
         >
           <label className="block">
@@ -273,10 +322,15 @@ export function CasesPage() {
 
               <input
                 type="search"
-                value={searchInput}
-                onChange={(event) => {
+                value={
+                  searchInput
+                }
+                onChange={(
+                  event,
+                ) => {
                   setSearchInput(
-                    event.target.value,
+                    event.target
+                      .value,
                   )
                 }}
                 placeholder="Search title or description"
@@ -292,9 +346,12 @@ export function CasesPage() {
 
             <select
               value={severity}
-              onChange={(event) => {
+              onChange={(
+                event,
+              ) => {
                 setSeverity(
-                  event.target.value as
+                  event.target
+                    .value as
                     | ''
                     | CaseSeverity,
                 )
@@ -303,17 +360,21 @@ export function CasesPage() {
               }}
               className="mt-2 w-full rounded-xl border border-white/10 bg-slate-900 px-4 py-3 outline-none transition focus:border-cyan/60"
             >
-              {severityOptions.map((option) => (
-                <option
-                  key={
-                    option.value ||
-                    'all-severities'
-                  }
-                  value={option.value}
-                >
-                  {option.label}
-                </option>
-              ))}
+              {severityOptions.map(
+                (option) => (
+                  <option
+                    key={
+                      option.value
+                      || 'all-severities'
+                    }
+                    value={
+                      option.value
+                    }
+                  >
+                    {option.label}
+                  </option>
+                ),
+              )}
             </select>
           </label>
 
@@ -323,10 +384,15 @@ export function CasesPage() {
             </span>
 
             <select
-              value={caseStatus}
-              onChange={(event) => {
+              value={
+                caseStatus
+              }
+              onChange={(
+                event,
+              ) => {
                 setCaseStatus(
-                  event.target.value as
+                  event.target
+                    .value as
                     | ''
                     | CaseStatus,
                 )
@@ -335,17 +401,21 @@ export function CasesPage() {
               }}
               className="mt-2 w-full rounded-xl border border-white/10 bg-slate-900 px-4 py-3 outline-none transition focus:border-cyan/60"
             >
-              {statusOptions.map((option) => (
-                <option
-                  key={
-                    option.value ||
-                    'all-statuses'
-                  }
-                  value={option.value}
-                >
-                  {option.label}
-                </option>
-              ))}
+              {statusOptions.map(
+                (option) => (
+                  <option
+                    key={
+                      option.value
+                      || 'all-statuses'
+                    }
+                    value={
+                      option.value
+                    }
+                  >
+                    {option.label}
+                  </option>
+                ),
+              )}
             </select>
           </label>
 
@@ -361,7 +431,9 @@ export function CasesPage() {
         {hasActiveFilters && (
           <button
             type="button"
-            onClick={clearFilters}
+            onClick={
+              clearFilters
+            }
             className="mt-4 text-sm text-slate-400 transition hover:text-cyan"
           >
             Clear all filters
@@ -376,7 +448,8 @@ export function CasesPage() {
             className="animate-spin text-cyan"
           />
 
-          Loading investigation cases...
+          Loading investigation
+          cases...
         </div>
       )}
 
@@ -389,21 +462,23 @@ export function CasesPage() {
 
           <div>
             <p className="font-semibold">
-              Cases could not be loaded
+              Cases could not be
+              loaded
             </p>
 
             <p className="mt-1 text-sm text-red-200/80">
-              Check that the backend and PostgreSQL
-              containers are running, then refresh
+              Check that the backend
+              and PostgreSQL containers
+              are running, then refresh
               the page.
             </p>
           </div>
         </div>
       )}
 
-      {!casesQuery.isLoading &&
-        !casesQuery.isError &&
-        cases.length === 0 && (
+      {!casesQuery.isLoading
+        && !casesQuery.isError
+        && cases.length === 0 && (
           <div className="glass mt-6 grid place-items-center rounded-2xl p-10 text-center">
             <FolderSearch
               size={38}
@@ -415,38 +490,51 @@ export function CasesPage() {
             </h2>
 
             <p className="mt-2 max-w-md text-sm text-slate-400">
-              No PostgreSQL records match the
-              selected search and filters.
+              No PostgreSQL records
+              match the selected search
+              and filters.
             </p>
           </div>
         )}
 
       {cases.length > 0 && (
         <div className="mt-6 grid gap-4">
-          {cases.map((investigationCase) => (
-            <Link
-              key={investigationCase.id}
-              to={`/cases/${investigationCase.id}`}
-              className="group block"
-              aria-label={`Open case ${investigationCase.title}`}
-            >
-              <article className="glass rounded-2xl p-5 transition duration-200 group-hover:-translate-y-0.5 group-hover:border-cyan/40 group-hover:shadow-[0_20px_60px_rgba(34,211,238,0.08)]">
+          {cases.map(
+            (
+              investigationCase,
+            ) => (
+              <article
+                key={
+                  investigationCase.id
+                }
+                className="glass rounded-2xl p-5 transition duration-200 hover:-translate-y-0.5 hover:border-cyan/40 hover:shadow-[0_20px_60px_rgba(34,211,238,0.08)]"
+              >
                 <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h2 className="text-lg font-semibold transition group-hover:text-cyan">
-                        {investigationCase.title}
+                  <div className="min-w-0">
+                    <Link
+                      to={`/cases/${investigationCase.id}`}
+                      className="group inline-flex max-w-full items-center gap-2"
+                      aria-label={`Open case ${investigationCase.title}`}
+                    >
+                      <h2 className="truncate text-lg font-semibold transition group-hover:text-cyan">
+                        {
+                          investigationCase
+                            .title
+                        }
                       </h2>
 
                       <ArrowUpRight
                         size={17}
-                        className="text-slate-500 transition group-hover:text-cyan"
+                        className="shrink-0 text-slate-500 transition group-hover:text-cyan"
                       />
-                    </div>
+                    </Link>
 
                     <p className="mt-2 break-all text-xs text-slate-500">
                       Case ID:{' '}
-                      {investigationCase.id}
+                      {
+                        investigationCase
+                          .id
+                      }
                     </p>
                   </div>
 
@@ -454,19 +542,27 @@ export function CasesPage() {
                     className={[
                       'rounded-full border px-3 py-1 text-xs font-medium',
                       getSeverityClasses(
-                        investigationCase.severity,
+                        investigationCase
+                          .severity,
                       ),
                     ].join(' ')}
                   >
                     {formatLabel(
-                      investigationCase.severity,
+                      investigationCase
+                        .severity,
                     )}
                   </span>
                 </div>
 
                 <p className="mt-4 text-sm leading-6 text-slate-300">
-                  {investigationCase.description ||
-                    'No case description has been provided.'}
+                  {
+                    investigationCase
+                      .description
+                    || (
+                      'No case description '
+                      + 'has been provided.'
+                    )
+                  }
                 </p>
 
                 <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4 text-xs">
@@ -474,94 +570,129 @@ export function CasesPage() {
                     <AlertTriangle
                       size={15}
                       className={getStatusClasses(
-                        investigationCase.status,
+                        investigationCase
+                          .status,
                       )}
                     />
 
                     <span
                       className={getStatusClasses(
-                        investigationCase.status,
+                        investigationCase
+                          .status,
                       )}
                     >
                       {formatLabel(
-                        investigationCase.status,
+                        investigationCase
+                          .status,
                       )}
                     </span>
                   </div>
 
-                  <div className="text-slate-500">
-                    Created:{' '}
+                  <div className="flex flex-wrap items-center justify-end gap-3">
+                    <div className="text-slate-500">
+                      Created:{' '}
 
-                    {formatDate(
-                      investigationCase.created_at,
-                    )}
+                      {formatDate(
+                        investigationCase
+                          .created_at,
+                      )}
+                    </div>
+
+                    <OpenInvestigationWorkspaceButton
+                      caseId={
+                        investigationCase
+                          .id
+                      }
+                      compact
+                    />
                   </div>
                 </div>
               </article>
-            </Link>
-          ))}
+            ),
+          )}
         </div>
       )}
 
-      {data && data.total > 0 && (
-        <div className="glass mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl px-5 py-4">
-          <p className="text-sm text-slate-400">
-            Page{' '}
+      {data
+        && data.total > 0 && (
+          <div className="glass mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl px-5 py-4">
+            <p className="text-sm text-slate-400">
+              Page{' '}
 
-            <span className="text-white">
-              {data.page}
-            </span>{' '}
+              <span className="text-white">
+                {data.page}
+              </span>{' '}
 
-            of{' '}
+              of{' '}
 
-            <span className="text-white">
-              {Math.max(totalPages, 1)}
-            </span>
-          </p>
+              <span className="text-white">
+                {Math.max(
+                  totalPages,
+                  1,
+                )}
+              </span>
+            </p>
 
-          <div className="flex gap-2">
-            <button
-              type="button"
-              disabled={page <= 1}
-              onClick={() => {
-                setPage((currentPage) =>
-                  Math.max(
-                    1,
-                    currentPage - 1,
-                  ),
-                )
-              }}
-              className="flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm transition hover:border-cyan/40 hover:text-cyan disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              <ChevronLeft size={17} />
-              Previous
-            </button>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                disabled={
+                  page <= 1
+                }
+                onClick={() => {
+                  setPage(
+                    (
+                      currentPage,
+                    ) =>
+                      Math.max(
+                        1,
+                        currentPage
+                        - 1,
+                      ),
+                  )
+                }}
+                className="flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm transition hover:border-cyan/40 hover:text-cyan disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <ChevronLeft
+                  size={17}
+                />
+                Previous
+              </button>
 
-            <button
-              type="button"
-              disabled={
-                totalPages === 0 ||
-                page >= totalPages
-              }
-              onClick={() => {
-                setPage(
-                  (currentPage) =>
-                    currentPage + 1,
-                )
-              }}
-              className="flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm transition hover:border-cyan/40 hover:text-cyan disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              Next
-              <ChevronRight size={17} />
-            </button>
+              <button
+                type="button"
+                disabled={
+                  totalPages === 0
+                  || page
+                    >= totalPages
+                }
+                onClick={() => {
+                  setPage(
+                    (
+                      currentPage,
+                    ) =>
+                      currentPage
+                      + 1,
+                  )
+                }}
+                className="flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm transition hover:border-cyan/40 hover:text-cyan disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Next
+
+                <ChevronRight
+                  size={17}
+                />
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       {isCreateFormOpen && (
         <CreateCaseForm
           onClose={() => {
-            setIsCreateFormOpen(false)
+            setIsCreateFormOpen(
+              false,
+            )
           }}
         />
       )}

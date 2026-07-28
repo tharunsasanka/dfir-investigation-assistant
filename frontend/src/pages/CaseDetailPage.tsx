@@ -45,6 +45,7 @@ import {
 import {
   EditCaseForm,
 } from '../components/cases/EditCaseForm'
+import { OpenInvestigationWorkspaceButton } from '../components/cases/OpenInvestigationWorkspaceButton'
 import {
   LogIngestionHistory,
 } from '../components/cases/LogIngestionHistory'
@@ -241,6 +242,10 @@ export function CaseDetailPage() {
         </Link>
 
         <div className="flex flex-wrap gap-3">
+          <OpenInvestigationWorkspaceButton
+            caseId={investigationCase.id}
+          />
+
           <Can permission="cases.update">
             <button
               type="button"
