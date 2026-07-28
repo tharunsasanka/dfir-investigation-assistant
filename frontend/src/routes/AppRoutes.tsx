@@ -8,6 +8,7 @@ import { AppShell } from '../components/layout/AppShell'
 import { CaseDetailPage } from '../pages/CaseDetailPage'
 import { CasesPage } from '../pages/CasesPage'
 import { DashboardPage } from '../pages/DashboardPage'
+import { InvestigationPage } from '../pages/InvestigationPage'
 import { LandingPage } from '../pages/LandingPage'
 import { LoginPage } from '../pages/LoginPage'
 import { PlaceholderPage } from '../pages/PlaceholderPage'
@@ -55,7 +56,9 @@ export function AppRoutes() {
           <Route
             path="/investigation"
             element={
-              <PlaceholderPage title="Investigation Workspace" />
+              <PermissionRoute permission="cases.read">
+                <InvestigationPage />
+              </PermissionRoute>
             }
           />
 
