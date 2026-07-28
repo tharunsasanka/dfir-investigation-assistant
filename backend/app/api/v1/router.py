@@ -11,6 +11,7 @@ from app.api.v1 import (
     log_ingestion,
     security_findings,
     summary_traceability,
+    investigation_reports,
 )
 
 
@@ -61,4 +62,8 @@ api_router.include_router(
 
 api_router.include_router(
     investigation_summaries.router,
+)
+
+api_router.include_router(
+    investigation_reports.router,
 )

@@ -118,8 +118,34 @@ class FakeSession:
 
     def scalar(
         self,
-        _statement,
+        statement,
     ):
+        descriptions = getattr(
+            statement,
+            "column_descriptions",
+            [],
+        )
+
+        for description in descriptions:
+            entity = description.get(
+                "entity"
+            )
+
+            entity_name = getattr(
+                entity,
+                "__name__",
+                "",
+            )
+
+            if (
+                entity_name
+                == (
+                    "InvestigationSummary"
+                    "TraceabilityReport"
+                )
+            ):
+                return None
+
         return self.scalar_value
 
     def add(
@@ -148,6 +174,9 @@ class FakeSession:
 
     def commit(self):
         self.commit_count += 1
+
+    def flush(self):
+        return None
 
     def rollback(self):
         self.rollback_count += 1
@@ -1099,7 +1128,19 @@ def test_creates_analyst_revision():
         ),
     )
 
+    investigation_case = SimpleNamespace(
+        id=CASE_ID,
+        title="Analyst revision case",
+        description="Case used for analyst revision testing.",
+        severity=CaseSeverity.high,
+        status=CaseStatus.investigating,
+        created_at=BASE_TIME,
+        updated_at=BASE_TIME,
+        is_deleted=False,
+    )
+
     session = FakeSession(
+        investigation_case=investigation_case,
         summaries=[
             parent_summary
         ],
