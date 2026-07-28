@@ -18,6 +18,9 @@ from app.schemas.user import (
     UserCreate,
     UserUpdate,
 )
+from app.services.session_revocation_service import (
+    revoke_user_sessions,
+)
 
 
 class UserServiceError(Exception):
@@ -334,6 +337,9 @@ def update_user(
         )
     )
 
+    was_active = user.is_active
+    password_changed = False
+
     email = updates.get(
         "email"
     )
@@ -369,6 +375,8 @@ def update_user(
             )
         )
 
+        password_changed = True
+
     is_active = updates.get(
         "is_active"
     )
@@ -377,6 +385,11 @@ def update_user(
         user.is_active = (
             is_active
         )
+
+    account_deactivated = (
+        was_active
+        and is_active is False
+    )
 
     is_superuser = updates.get(
         "is_superuser"
@@ -402,6 +415,20 @@ def update_user(
             timezone.utc
         )
     )
+
+    if account_deactivated:
+        revoke_user_sessions(
+            db,
+            user.id,
+            "account_deactivated",
+        )
+
+    elif password_changed:
+        revoke_user_sessions(
+            db,
+            user.id,
+            "administrator_password_reset",
+        )
 
     db.commit()
     db.refresh(user)
@@ -459,7 +486,6 @@ def unlock_user(
         )
 
     return loaded_user
-
 
 def update_profile(
     db: Session,
@@ -548,6 +574,12 @@ def change_password(
         datetime.now(
             timezone.utc
         )
+    )
+
+    revoke_user_sessions(
+        db,
+        user.id,
+        "password_changed",
     )
 
     db.commit()
