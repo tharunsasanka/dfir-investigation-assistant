@@ -1,45 +1,156 @@
 import {
+  lazy,
+  Suspense,
+  type ReactNode,
+} from 'react'
+import {
   Navigate,
   Route,
   Routes,
 } from 'react-router-dom'
 
+import { PageLoader } from '../components/common/PageLoader'
 import { AppShell } from '../components/layout/AppShell'
-import { CaseDetailPage } from '../pages/CaseDetailPage'
-import { CasesPage } from '../pages/CasesPage'
-import { DashboardPage } from '../pages/DashboardPage'
-import { InvestigationPage } from '../pages/InvestigationPage'
-import { LandingPage } from '../pages/LandingPage'
-import { LoginPage } from '../pages/LoginPage'
-import { SettingsPage } from '../pages/SettingsPage'
 import { PermissionRoute } from './PermissionRoute'
 import { ProtectedRoute } from './ProtectedRoute'
+
+const LandingPage = lazy(
+  async () => {
+    const module = await import(
+      '../pages/LandingPage'
+    )
+
+    return {
+      default: module.LandingPage,
+    }
+  },
+)
+
+const LoginPage = lazy(
+  async () => {
+    const module = await import(
+      '../pages/LoginPage'
+    )
+
+    return {
+      default: module.LoginPage,
+    }
+  },
+)
+
+const DashboardPage = lazy(
+  async () => {
+    const module = await import(
+      '../pages/DashboardPage'
+    )
+
+    return {
+      default: module.DashboardPage,
+    }
+  },
+)
+
+const CasesPage = lazy(
+  async () => {
+    const module = await import(
+      '../pages/CasesPage'
+    )
+
+    return {
+      default: module.CasesPage,
+    }
+  },
+)
+
+const CaseDetailPage = lazy(
+  async () => {
+    const module = await import(
+      '../pages/CaseDetailPage'
+    )
+
+    return {
+      default: module.CaseDetailPage,
+    }
+  },
+)
+
+const InvestigationPage = lazy(
+  async () => {
+    const module = await import(
+      '../pages/InvestigationPage'
+    )
+
+    return {
+      default: module.InvestigationPage,
+    }
+  },
+)
+
+const SettingsPage = lazy(
+  async () => {
+    const module = await import(
+      '../pages/SettingsPage'
+    )
+
+    return {
+      default: module.SettingsPage,
+    }
+  },
+)
+
+type SuspendedPageProps = {
+  children: ReactNode
+}
+
+function SuspendedPage({
+  children,
+}: SuspendedPageProps) {
+  return (
+    <Suspense fallback={<PageLoader />}>
+      {children}
+    </Suspense>
+  )
+}
 
 export function AppRoutes() {
   return (
     <Routes>
       <Route
         path="/"
-        element={<LandingPage />}
+        element={
+          <SuspendedPage>
+            <LandingPage />
+          </SuspendedPage>
+        }
       />
 
       <Route
         path="/login"
-        element={<LoginPage />}
+        element={
+          <SuspendedPage>
+            <LoginPage />
+          </SuspendedPage>
+        }
       />
 
       <Route element={<ProtectedRoute />}>
         <Route element={<AppShell />}>
           <Route
             path="/dashboard"
-            element={<DashboardPage />}
+            element={
+              <SuspendedPage>
+                <DashboardPage />
+              </SuspendedPage>
+            }
           />
 
           <Route
             path="/cases"
             element={
               <PermissionRoute permission="cases.read">
-                <CasesPage />
+                <SuspendedPage>
+                  <CasesPage />
+                </SuspendedPage>
               </PermissionRoute>
             }
           />
@@ -48,7 +159,9 @@ export function AppRoutes() {
             path="/cases/:caseId"
             element={
               <PermissionRoute permission="cases.read">
-                <CaseDetailPage />
+                <SuspendedPage>
+                  <CaseDetailPage />
+                </SuspendedPage>
               </PermissionRoute>
             }
           />
@@ -57,14 +170,20 @@ export function AppRoutes() {
             path="/investigation"
             element={
               <PermissionRoute permission="cases.read">
-                <InvestigationPage />
+                <SuspendedPage>
+                  <InvestigationPage />
+                </SuspendedPage>
               </PermissionRoute>
             }
           />
 
           <Route
             path="/settings"
-            element={<SettingsPage />}
+            element={
+              <SuspendedPage>
+                <SettingsPage />
+              </SuspendedPage>
+            }
           />
         </Route>
       </Route>
