@@ -252,6 +252,7 @@ class Settings(BaseSettings):
             "Content-Disposition",
             "Retry-After",
             "X-Document-SHA256",
+            "X-Error-ID",
         ]
 
     @property

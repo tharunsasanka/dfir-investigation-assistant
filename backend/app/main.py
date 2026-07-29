@@ -8,6 +8,9 @@ from starlette.middleware.trustedhost import (
 
 from app.api.v1.router import api_router
 from app.core.config import get_settings
+from app.core.error_handlers import (
+    unhandled_exception_handler,
+)
 from app.middleware.security_headers import (
     SecurityHeadersMiddleware,
 )
@@ -33,6 +36,11 @@ app = FastAPI(
         if settings.api_docs_enabled
         else None
     ),
+)
+
+app.add_exception_handler(
+    Exception,
+    unhandled_exception_handler,
 )
 
 app.add_middleware(
