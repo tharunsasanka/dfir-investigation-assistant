@@ -1,4 +1,5 @@
 from functools import lru_cache
+from ipaddress import ip_network
 from typing import Literal
 
 from pydantic import (
@@ -71,6 +72,8 @@ class Settings(BaseSettings):
         "testserver,"
         "backend"
     )
+
+    trusted_proxy_cidrs: str = ""
 
     security_headers_enabled: bool = True
 
@@ -205,6 +208,18 @@ class Settings(BaseSettings):
         return []
 
     @property
+    def trusted_proxy_cidr_list(
+        self,
+    ) -> list[str]:
+        return [
+            value.strip()
+            for value
+            in self.trusted_proxy_cidrs
+            .split(",")
+            if value.strip()
+        ]
+
+    @property
     def cors_allowed_method_list(
         self,
     ) -> list[str]:
@@ -275,6 +290,28 @@ class Settings(BaseSettings):
     def validate_security_configuration(
         self,
     ) -> "Settings":
+        for value in (
+            self.trusted_proxy_cidr_list
+        ):
+            try:
+                network = ip_network(
+                    value,
+                    strict=False,
+                )
+            except ValueError as error:
+                raise ValueError(
+                    "Trusted proxy CIDRs must "
+                    "contain valid IPv4 or IPv6 "
+                    "networks."
+                ) from error
+
+            if network.prefixlen == 0:
+                raise ValueError(
+                    "A trusted proxy CIDR cannot "
+                    "trust the entire address "
+                    "space."
+                )
+
         if self.environment != "production":
             return self
 

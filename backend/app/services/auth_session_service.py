@@ -1,4 +1,3 @@
-import hashlib
 import hmac
 import uuid
 from dataclasses import dataclass
@@ -20,6 +19,9 @@ from sqlalchemy.orm import (
 )
 
 from app.core.config import get_settings
+from app.services.request_client_service import (
+    get_request_client_ip_hash,
+)
 from app.core.security import (
     create_access_token,
     create_refresh_token,
@@ -77,17 +79,9 @@ def ensure_utc(
 def request_ip_hash(
     request: Request,
 ) -> str:
-    client_host = (
-        request.client.host
-        if request.client
-        else "unknown"
+    return get_request_client_ip_hash(
+        request
     )
-
-    return hashlib.sha256(
-        client_host.encode(
-            "utf-8"
-        )
-    ).hexdigest()
 
 
 def request_user_agent(

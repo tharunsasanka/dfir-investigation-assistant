@@ -1,4 +1,3 @@
-import hashlib
 import math
 from datetime import (
     datetime,
@@ -14,6 +13,9 @@ from sqlalchemy import (
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
+from app.services.request_client_service import (
+    get_request_client_ip_hash,
+)
 from app.models.authentication import (
     LoginRateLimit,
 )
@@ -56,17 +58,9 @@ def ensure_utc(
 def get_request_key(
     request: Request,
 ) -> str:
-    client_host = (
-        request.client.host
-        if request.client
-        else "unknown"
+    return get_request_client_ip_hash(
+        request
     )
-
-    return hashlib.sha256(
-        client_host.encode(
-            "utf-8"
-        )
-    ).hexdigest()
 
 
 def get_retry_after(
