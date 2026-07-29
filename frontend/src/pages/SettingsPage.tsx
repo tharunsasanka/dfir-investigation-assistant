@@ -1,5 +1,6 @@
 import {
   useMutation,
+  useQueryClient,
 } from '@tanstack/react-query'
 import {
   AlertCircle,
@@ -24,6 +25,9 @@ import {
 import {
   isAxiosError,
 } from 'axios'
+import {
+  useNavigate,
+} from 'react-router-dom'
 
 import {
   changePassword,
@@ -129,9 +133,16 @@ function formatDate(
 }
 
 export function SettingsPage() {
+  const queryClient =
+    useQueryClient()
+
+  const navigate =
+    useNavigate()
+
   const {
     user,
     refreshUser,
+    signOut,
   } = useAuth()
 
   const [
@@ -262,7 +273,7 @@ export function SettingsPage() {
       mutationFn:
         changePassword,
 
-      onSuccess: (
+      onSuccess: async (
         response,
       ) => {
         setCurrentPassword('')
@@ -271,6 +282,17 @@ export function SettingsPage() {
 
         setPasswordSuccess(
           response.message,
+        )
+
+        await signOut()
+
+        queryClient.clear()
+
+        navigate(
+          '/login',
+          {
+            replace: true,
+          },
         )
       },
     })

@@ -147,6 +147,27 @@ function formatDate(
   ).format(date)
 }
 
+function isFutureTimestamp(
+  value: string | null,
+): boolean {
+  if (!value) {
+    return false
+  }
+
+  const timestamp =
+    new Date(
+      value,
+    ).getTime()
+
+  return (
+    Number.isFinite(
+      timestamp,
+    )
+    && timestamp > Date.now()
+  )
+}
+
+
 function toggleRole(
   roleIds: string[],
   roleId: string,
@@ -194,6 +215,16 @@ export function UserAdministrationPanel() {
       currentUser,
       'roles.read',
     )
+
+  const canManageRoles =
+    hasPermission(
+      currentUser,
+      'roles.manage',
+    )
+
+  const canAssignRoles =
+    canReadRoles
+    && canManageRoles
 
   const [
     page,
@@ -326,7 +357,7 @@ export function UserAdministrationPanel() {
       }),
 
     enabled:
-      canReadRoles,
+      canAssignRoles,
   })
 
   const users = useMemo(
@@ -466,7 +497,9 @@ export function UserAdministrationPanel() {
       password:
         createPassword,
       role_ids:
-        createRoleIds,
+        canAssignRoles
+          ? createRoleIds
+          : [],
     })
   }
 
@@ -533,8 +566,13 @@ export function UserAdministrationPanel() {
           editFullName.trim(),
         is_active:
           editIsActive,
-        role_ids:
-          editRoleIds,
+    }
+
+    if (
+      canAssignRoles
+    ) {
+      request.role_ids =
+        editRoleIds
     }
 
     if (
@@ -860,14 +898,15 @@ export function UserAdministrationPanel() {
               </div>
             )}
 
-            {!canReadRoles && (
+            {!canAssignRoles && (
               <p className="mt-3 text-sm text-amber-300">
                 Role assignment requires the
-                roles.read permission.
+                roles.read and roles.manage
+                permissions.
               </p>
             )}
 
-            {canReadRoles
+            {canAssignRoles
               && !rolesQuery.isLoading
               && (
                 <div className="mt-3 grid gap-3 md:grid-cols-2">
@@ -1129,7 +1168,7 @@ export function UserAdministrationPanel() {
             </label>
           </div>
 
-          {canReadRoles && (
+          {canAssignRoles && (
             <div className="mt-6">
               <p className="text-sm text-slate-300">
                 Assigned roles
@@ -1288,8 +1327,9 @@ export function UserAdministrationPanel() {
           {users.map(
             (systemUser) => {
               const isLocked =
-                systemUser.locked_until
-                !== null
+                isFutureTimestamp(
+                  systemUser.locked_until,
+                )
 
               const isCurrentUser =
                 systemUser.id

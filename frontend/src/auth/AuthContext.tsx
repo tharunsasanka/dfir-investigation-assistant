@@ -78,6 +78,8 @@ export function AuthProvider({
               refreshToken,
           })
         }
+      } catch {
+        return
       } finally {
         clearLocalSession()
       }
