@@ -49,6 +49,32 @@ class RoleNotFoundError(UserServiceError):
         )
 
 
+class InactiveRoleAssignmentError(
+    UserServiceError
+):
+    def __init__(
+        self,
+        inactive_role_ids: set[
+            uuid.UUID
+        ],
+    ) -> None:
+        self.inactive_role_ids = (
+            inactive_role_ids
+        )
+
+        super().__init__(
+            "Inactive roles cannot be "
+            "assigned: "
+            + ", ".join(
+                sorted(
+                    str(role_id)
+                    for role_id
+                    in inactive_role_ids
+                )
+            )
+        )
+
+
 class UserNotFoundError(UserServiceError):
     pass
 
@@ -215,6 +241,18 @@ def _load_roles(
     if missing_role_ids:
         raise RoleNotFoundError(
             missing_role_ids
+        )
+
+    inactive_role_ids = {
+        role_id
+        for role_id, role
+        in roles_by_id.items()
+        if not role.is_active
+    }
+
+    if inactive_role_ids:
+        raise InactiveRoleAssignmentError(
+            inactive_role_ids
         )
 
     return [
