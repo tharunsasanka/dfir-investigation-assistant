@@ -52,6 +52,45 @@ router = APIRouter(
     tags=["evidence"],
 )
 
+EVIDENCE_DOWNLOAD_MEDIA_TYPE = (
+    "application/octet-stream"
+)
+
+
+def build_evidence_download_filename(
+    value: str,
+    evidence_id: uuid.UUID,
+) -> str:
+    normalized_value = value.replace(
+        "\\",
+        "/",
+    )
+
+    filename = Path(
+        normalized_value
+    ).name
+
+    filename = "".join(
+        character
+        for character in filename
+        if (
+            ord(character) >= 32
+            and ord(character) != 127
+        )
+    ).strip()
+
+    if filename in {
+        "",
+        ".",
+        "..",
+    }:
+        return (
+            f"evidence-{evidence_id.hex}"
+        )
+
+    return filename[:255]
+
+
 
 EvidenceReadUser = Annotated[
     User,
@@ -637,6 +676,24 @@ def download_evidence_content(
 
     return FileResponse(
         path=path,
-        media_type=evidence.content_type,
-        filename=evidence.original_filename,
+        media_type=(
+            EVIDENCE_DOWNLOAD_MEDIA_TYPE
+        ),
+        filename=(
+            build_evidence_download_filename(
+                evidence.original_filename,
+                evidence.id,
+            )
+        ),
+        content_disposition_type=(
+            "attachment"
+        ),
+        headers={
+            "Cache-Control":
+                "no-store, private",
+            "Pragma":
+                "no-cache",
+            "X-Content-Type-Options":
+                "nosniff",
+        },
     )
