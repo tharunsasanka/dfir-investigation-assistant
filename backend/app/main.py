@@ -1,4 +1,8 @@
-from fastapi import FastAPI
+from typing import Annotated
+
+from fastapi import Depends, FastAPI
+from sqlalchemy import text
+from sqlalchemy.orm import Session
 from fastapi.middleware.cors import (
     CORSMiddleware,
 )
@@ -8,6 +12,7 @@ from starlette.middleware.trustedhost import (
 
 from app.api.v1.router import api_router
 from app.core.config import get_settings
+from app.db.session import get_db
 from app.core.error_handlers import (
     unhandled_exception_handler,
 )
@@ -17,6 +22,12 @@ from app.middleware.security_headers import (
 
 
 settings = get_settings()
+
+DatabaseSession = Annotated[
+    Session,
+    Depends(get_db),
+]
+
 
 app = FastAPI(
     title=settings.app_name,
@@ -85,6 +96,32 @@ app.include_router(
     api_router,
     prefix=settings.api_v1_prefix,
 )
+
+
+@app.get(
+    "/health",
+    include_in_schema=False,
+)
+def health() -> dict[str, str]:
+    return {
+        "status": "ok",
+    }
+
+
+@app.get(
+    "/ready",
+    include_in_schema=False,
+)
+def readiness(
+    db: DatabaseSession,
+) -> dict[str, str]:
+    db.execute(
+        text("SELECT 1")
+    )
+
+    return {
+        "status": "ready",
+    }
 
 
 @app.get(

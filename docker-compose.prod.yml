@@ -1,0 +1,202 @@
+name: dfir-investigation-assistant-prod
+
+x-backend-environment: &backend-environment
+  ENVIRONMENT: production
+  DOCS_ENABLED: "false"
+  DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+  JWT_SECRET_KEY: ${JWT_SECRET_KEY:?JWT_SECRET_KEY is required}
+  CORS_ORIGINS: ${CORS_ORIGINS:?CORS_ORIGINS is required}
+  CORS_ALLOW_CREDENTIALS: "true"
+  TRUSTED_HOSTS: ${TRUSTED_HOSTS:?TRUSTED_HOSTS is required}
+  TRUSTED_PROXY_CIDRS: ${TRUSTED_PROXY_CIDRS:-172.16.0.0/12}
+  SECURITY_HEADERS_ENABLED: "true"
+  HSTS_ENABLED: ${HSTS_ENABLED:-false}
+  HSTS_MAX_AGE_SECONDS: ${HSTS_MAX_AGE_SECONDS:-31536000}
+  EVIDENCE_STORAGE_ROOT: /app/evidence_storage
+  EVIDENCE_MAX_UPLOAD_BYTES: ${EVIDENCE_MAX_UPLOAD_BYTES:-104857600}
+  AI_LOCAL_ENABLED: "false"
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: "3"
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+
+    expose:
+      - "5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+    networks:
+      - internal
+
+    logging: *default-logging
+
+  migrate:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+
+    restart: "no"
+
+    environment: *backend-environment
+
+    command:
+      - alembic
+      - upgrade
+      - head
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+    networks:
+      - internal
+
+    read_only: true
+
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+
+    security_opt:
+      - no-new-privileges:true
+
+    cap_drop:
+      - ALL
+
+    logging: *default-logging
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+
+    restart: unless-stopped
+
+    environment: *backend-environment
+
+    command:
+      - uvicorn
+      - app.main:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+      - --workers
+      - "2"
+
+    expose:
+      - "8000"
+
+    volumes:
+      - evidence_data:/app/evidence_storage
+
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen("http://127.0.0.1:8000/ready", timeout=3).read()
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+    networks:
+      - internal
+
+    read_only: true
+
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=128m
+
+    security_opt:
+      - no-new-privileges:true
+
+    cap_drop:
+      - ALL
+
+    stop_grace_period: 30s
+
+    logging: *default-logging
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+      args:
+        VITE_API_URL: /api/v1
+
+    restart: unless-stopped
+
+    ports:
+      - "${APP_PORT:-8080}:8080"
+
+    depends_on:
+      backend:
+        condition: service_healthy
+
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - -q
+        - -O
+        - /dev/null
+        - http://127.0.0.1:8080/healthz
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+    networks:
+      - edge
+      - internal
+
+    read_only: true
+
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+
+    security_opt:
+      - no-new-privileges:true
+
+    cap_drop:
+      - ALL
+
+    stop_grace_period: 20s
+
+    logging: *default-logging
+
+networks:
+  edge:
+  internal:
+    internal: true
+
+volumes:
+  postgres_data:
+  evidence_data:

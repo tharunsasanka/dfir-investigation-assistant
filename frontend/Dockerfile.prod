@@ -1,0 +1,26 @@
+FROM node:24-alpine AS build
+
+WORKDIR /app
+
+ARG VITE_API_URL=/api/v1
+ENV VITE_API_URL=$VITE_API_URL
+
+COPY package.json package-lock.json ./
+
+RUN npm ci
+
+COPY . .
+
+RUN npm run build
+
+
+FROM nginx:1.27-alpine
+
+COPY nginx.prod.conf /etc/nginx/nginx.conf
+COPY --from=build --chown=nginx:nginx /app/dist /usr/share/nginx/html
+
+USER nginx
+
+EXPOSE 8080
+
+CMD ["sh", "-c", "mkdir -p /tmp/client_temp /tmp/proxy_temp /tmp/fastcgi_temp /tmp/uwsgi_temp /tmp/scgi_temp && exec nginx -g 'daemon off;'"]

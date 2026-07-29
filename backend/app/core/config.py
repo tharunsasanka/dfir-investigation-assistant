@@ -326,6 +326,7 @@ class Settings(BaseSettings):
             "development-only-change-me",
             "replace-with-a-long-random-secret",
             "change-me",
+            "replace-with-at-least-64-random-characters-before-production",
         }
 
         if (
