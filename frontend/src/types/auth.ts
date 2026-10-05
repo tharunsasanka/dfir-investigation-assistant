@@ -46,10 +46,19 @@ export type TokenResponse = {
 
 export type AccessTokenResponse = {
   access_token: string
+  refresh_token: string
   token_type: 'bearer'
   expires_in: number
 }
 
 export type RefreshTokenRequest = {
   refresh_token: string
+}
+
+export type LogoutRequest = {
+  refresh_token: string
+}
+
+export type LogoutResponse = {
+  message: string
 }

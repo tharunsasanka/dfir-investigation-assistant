@@ -1,10 +1,22 @@
 from functools import lru_cache
+from ipaddress import ip_network
+from typing import Literal
 
-from pydantic import Field
+from pydantic import (
+    Field,
+    model_validator,
+)
 from pydantic_settings import (
     BaseSettings,
     SettingsConfigDict,
 )
+
+
+EnvironmentName = Literal[
+    "development",
+    "test",
+    "production",
+]
 
 
 class Settings(BaseSettings):
@@ -13,6 +25,12 @@ class Settings(BaseSettings):
     )
 
     api_v1_prefix: str = "/api/v1"
+
+    environment: EnvironmentName = (
+        "development"
+    )
+
+    docs_enabled: bool = True
 
     database_url: str = (
         "postgresql+psycopg://"
@@ -24,17 +42,78 @@ class Settings(BaseSettings):
         "development-only-change-me"
     )
 
-    jwt_algorithm: str = "HS256"
+    jwt_algorithm: Literal[
+        "HS256",
+        "HS384",
+        "HS512",
+    ] = "HS256"
 
-    access_token_expire_minutes: int = 30
-    refresh_token_expire_days: int = 7
+    access_token_expire_minutes: int = Field(
+        default=30,
+        ge=5,
+        le=120,
+    )
+
+    refresh_token_expire_days: int = Field(
+        default=7,
+        ge=1,
+        le=30,
+    )
 
     cors_origins: str = (
         "http://localhost:5173"
     )
 
-    max_failed_login_attempts: int = 5
-    login_lockout_minutes: int = 15
+    cors_allow_credentials: bool = True
+
+    trusted_hosts: str = (
+        "localhost,"
+        "127.0.0.1,"
+        "testserver,"
+        "backend"
+    )
+
+    trusted_proxy_cidrs: str = ""
+
+    security_headers_enabled: bool = True
+
+    hsts_enabled: bool = False
+
+    hsts_max_age_seconds: int = Field(
+        default=31536000,
+        ge=0,
+        le=63072000,
+    )
+
+    max_failed_login_attempts: int = Field(
+        default=5,
+        ge=3,
+        le=20,
+    )
+
+    login_lockout_minutes: int = Field(
+        default=15,
+        ge=1,
+        le=1440,
+    )
+
+    login_rate_limit_attempts: int = Field(
+        default=20,
+        ge=3,
+        le=200,
+    )
+
+    login_rate_limit_window_seconds: int = Field(
+        default=300,
+        ge=60,
+        le=3600,
+    )
+
+    login_rate_limit_block_seconds: int = Field(
+        default=900,
+        ge=60,
+        le=86400,
+    )
 
     ai_local_enabled: bool = False
 
@@ -56,36 +135,28 @@ class Settings(BaseSettings):
         "ollama"
     )
 
-    ai_local_timeout_seconds: float = (
-        Field(
-            default=60.0,
-            ge=1.0,
-            le=300.0,
-        )
+    ai_local_timeout_seconds: float = Field(
+        default=60.0,
+        ge=1.0,
+        le=300.0,
     )
 
-    ai_local_connect_timeout_seconds: (
-        float
-    ) = Field(
+    ai_local_connect_timeout_seconds: float = Field(
         default=5.0,
         ge=0.5,
         le=60.0,
     )
 
-    ai_local_max_prompt_chars: int = (
-        Field(
-            default=30000,
-            ge=1000,
-            le=200000,
-        )
+    ai_local_max_prompt_chars: int = Field(
+        default=30000,
+        ge=1000,
+        le=200000,
     )
 
-    ai_local_max_response_bytes: int = (
-        Field(
-            default=262144,
-            ge=4096,
-            le=2097152,
-        )
+    ai_local_max_response_bytes: int = Field(
+        default=262144,
+        ge=4096,
+        le=2097152,
     )
 
     ai_local_temperature: float = Field(
@@ -94,9 +165,7 @@ class Settings(BaseSettings):
         le=2.0,
     )
 
-    ai_local_fallback_to_deterministic: (
-        bool
-    ) = True
+    ai_local_fallback_to_deterministic: bool = True
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -115,6 +184,98 @@ class Settings(BaseSettings):
         ]
 
     @property
+    def trusted_host_list(
+        self,
+    ) -> list[str]:
+        hosts = [
+            host.strip()
+            for host
+            in self.trusted_hosts.split(",")
+            if host.strip()
+        ]
+
+        if hosts:
+            return hosts
+
+        if self.environment != "production":
+            return [
+                "localhost",
+                "127.0.0.1",
+                "testserver",
+                "backend",
+            ]
+
+        return []
+
+    @property
+    def trusted_proxy_cidr_list(
+        self,
+    ) -> list[str]:
+        return [
+            value.strip()
+            for value
+            in self.trusted_proxy_cidrs
+            .split(",")
+            if value.strip()
+        ]
+
+    @property
+    def cors_allowed_method_list(
+        self,
+    ) -> list[str]:
+        return [
+            "GET",
+            "POST",
+            "PUT",
+            "PATCH",
+            "DELETE",
+            "OPTIONS",
+        ]
+
+    @property
+    def cors_allowed_header_list(
+        self,
+    ) -> list[str]:
+        return [
+            "Accept",
+            "Authorization",
+            "Content-Type",
+            "Origin",
+            "X-Requested-With",
+        ]
+
+    @property
+    def cors_exposed_header_list(
+        self,
+    ) -> list[str]:
+        return [
+            "Content-Disposition",
+            "Retry-After",
+            "X-Document-SHA256",
+            "X-Error-ID",
+        ]
+
+    @property
+    def api_docs_enabled(
+        self,
+    ) -> bool:
+        return (
+            self.docs_enabled
+            and self.environment
+            != "production"
+        )
+
+    @property
+    def hsts_active(
+        self,
+    ) -> bool:
+        return (
+            self.hsts_enabled
+            and self.environment
+            == "production"
+        )
+
+    @property
     def ai_local_allowed_host_list(
         self,
     ) -> list[str]:
@@ -125,6 +286,85 @@ class Settings(BaseSettings):
             .split(",")
             if host.strip()
         ]
+
+    @model_validator(mode="after")
+    def validate_security_configuration(
+        self,
+    ) -> "Settings":
+        for value in (
+            self.trusted_proxy_cidr_list
+        ):
+            try:
+                network = ip_network(
+                    value,
+                    strict=False,
+                )
+            except ValueError as error:
+                raise ValueError(
+                    "Trusted proxy CIDRs must "
+                    "contain valid IPv4 or IPv6 "
+                    "networks."
+                ) from error
+
+            if network.prefixlen == 0:
+                raise ValueError(
+                    "A trusted proxy CIDR cannot "
+                    "trust the entire address "
+                    "space."
+                )
+
+        if self.environment != "production":
+            return self
+
+        normalized_secret = (
+            self.jwt_secret_key
+            .strip()
+            .lower()
+        )
+
+        insecure_secrets = {
+            "development-only-change-me",
+            "replace-with-a-long-random-secret",
+            "change-me",
+            "replace-with-at-least-64-random-characters-before-production",
+        }
+
+        if (
+            len(self.jwt_secret_key) < 32
+            or normalized_secret
+            in insecure_secrets
+        ):
+            raise ValueError(
+                "Production requires a unique "
+                "JWT secret containing at least "
+                "32 characters."
+            )
+
+        if not self.cors_origin_list:
+            raise ValueError(
+                "Production requires at least "
+                "one trusted CORS origin."
+            )
+
+        if "*" in self.cors_origin_list:
+            raise ValueError(
+                "Wildcard CORS origins are not "
+                "permitted in production."
+            )
+
+        if not self.trusted_host_list:
+            raise ValueError(
+                "Production requires at least "
+                "one trusted host."
+            )
+
+        if "*" in self.trusted_host_list:
+            raise ValueError(
+                "Wildcard trusted hosts are not "
+                "permitted in production."
+            )
+
+        return self
 
 
 @lru_cache

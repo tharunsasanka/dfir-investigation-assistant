@@ -311,6 +311,54 @@ def test_secure_evidence_management(
     assert content_response.status_code == 200
     assert content_response.content == file_content
 
+    assert (
+        content_response.headers[
+            "content-type"
+        ]
+        == "application/octet-stream"
+    )
+
+    content_disposition = (
+        content_response.headers[
+            "content-disposition"
+        ]
+    )
+
+    assert content_disposition.lower().startswith(
+        "attachment;"
+    )
+
+    assert (
+        "powershell-security.log"
+        in content_disposition
+    )
+
+    assert (
+        "inline"
+        not in content_disposition.lower()
+    )
+
+    assert (
+        content_response.headers[
+            "cache-control"
+        ]
+        == "no-store, private"
+    )
+
+    assert (
+        content_response.headers[
+            "pragma"
+        ]
+        == "no-cache"
+    )
+
+    assert (
+        content_response.headers[
+            "x-content-type-options"
+        ]
+        == "nosniff"
+    )
+
     custody_response = client.get(
         (
             f"/api/v1/evidence/{evidence_id}"

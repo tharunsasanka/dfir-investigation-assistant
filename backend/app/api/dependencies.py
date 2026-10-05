@@ -1,37 +1,74 @@
 import uuid
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi import (
+    Depends,
+    HTTPException,
+    status,
+)
+from fastapi.security import (
+    HTTPAuthorizationCredentials,
+    HTTPBearer,
+)
 from jwt import InvalidTokenError
 from sqlalchemy import select
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import (
+    Session,
+    selectinload,
+)
 
-from app.core.security import decode_token
+from app.core.security import (
+    decode_token,
+)
 from app.db.session import get_db
 from app.models.role import Role
 from app.models.user import User
+from app.services.auth_session_service import (
+    InvalidAccessSessionError,
+    validate_access_session,
+)
 
 
-bearer_scheme = HTTPBearer(auto_error=False)
+bearer_scheme = HTTPBearer(
+    auto_error=False
+)
 
 
 def get_current_user(
     credentials: Annotated[
-        HTTPAuthorizationCredentials | None,
-        Depends(bearer_scheme),
+        HTTPAuthorizationCredentials
+        | None,
+        Depends(
+            bearer_scheme
+        ),
     ],
-    db: Annotated[Session, Depends(get_db)],
+    db: Annotated[
+        Session,
+        Depends(
+            get_db
+        ),
+    ],
 ) -> User:
-    """Return the active user identified by a valid access token."""
-
     credentials_error = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate authentication credentials.",
-        headers={"WWW-Authenticate": "Bearer"},
+        status_code=(
+            status
+            .HTTP_401_UNAUTHORIZED
+        ),
+        detail=(
+            "Could not validate "
+            "authentication credentials."
+        ),
+        headers={
+            "WWW-Authenticate":
+                "Bearer"
+        },
     )
 
-    if credentials is None or credentials.scheme.lower() != "bearer":
+    if (
+        credentials is None
+        or credentials.scheme.lower()
+        != "bearer"
+    ):
         raise credentials_error
 
     try:
@@ -40,71 +77,132 @@ def get_current_user(
             expected_type="access",
         )
 
-        subject = payload.get("sub")
+        subject = payload.get(
+            "sub"
+        )
 
-        if not subject:
+        session_claim = payload.get(
+            "sid"
+        )
+
+        if (
+            not subject
+            or not session_claim
+        ):
             raise credentials_error
 
-        user_id = uuid.UUID(subject)
+        user_id = uuid.UUID(
+            str(subject)
+        )
 
-    except (InvalidTokenError, TypeError, ValueError) as error:
+        session_id = uuid.UUID(
+            str(session_claim)
+        )
+
+        validate_access_session(
+            db,
+            user_id,
+            session_id,
+        )
+
+    except (
+        InvalidTokenError,
+        InvalidAccessSessionError,
+        TypeError,
+        ValueError,
+    ) as error:
         raise credentials_error from error
 
     statement = (
         select(User)
         .options(
-            selectinload(User.roles).selectinload(Role.permissions)
+            selectinload(
+                User.roles
+            ).selectinload(
+                Role.permissions
+            )
         )
-        .where(User.id == user_id)
+        .where(
+            User.id == user_id
+        )
     )
 
-    user = db.scalar(statement)
+    user = db.scalar(
+        statement
+    )
 
     if user is None:
         raise credentials_error
 
     if not user.is_active:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="This user account is inactive.",
+            status_code=(
+                status
+                .HTTP_403_FORBIDDEN
+            ),
+            detail=(
+                "This user account "
+                "is inactive."
+            ),
         )
 
     return user
-def get_permission_names(user: User) -> set[str]:
-    """Return all active permission names assigned to a user."""
 
-    permission_names: set[str] = set()
+
+def get_permission_names(
+    user: User,
+) -> set[str]:
+    permission_names: set[
+        str
+    ] = set()
 
     for role in user.roles:
         if not role.is_active:
             continue
 
-        for permission in role.permissions:
+        for permission in (
+            role.permissions
+        ):
             if permission.is_active:
-                permission_names.add(permission.name)
+                permission_names.add(
+                    permission.name
+                )
 
     return permission_names
 
 
-def require_permission(permission_name: str):
-    """Create a dependency that requires one specific permission."""
-
+def require_permission(
+    permission_name: str,
+):
     def permission_dependency(
         current_user: Annotated[
             User,
-            Depends(get_current_user),
+            Depends(
+                get_current_user
+            ),
         ],
     ) -> User:
         if current_user.is_superuser:
             return current_user
 
-        user_permissions = get_permission_names(current_user)
+        user_permissions = (
+            get_permission_names(
+                current_user
+            )
+        )
 
-        if permission_name not in user_permissions:
+        if (
+            permission_name
+            not in user_permissions
+        ):
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+                status_code=(
+                    status
+                    .HTTP_403_FORBIDDEN
+                ),
                 detail=(
-                    "You do not have permission to perform "
+                    "You do not have "
+                    "permission to perform "
                     "this action."
                 ),
             )

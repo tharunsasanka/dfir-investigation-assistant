@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 
 from app.api.dependencies import (
     get_current_user,
+    get_permission_names,
     require_permission,
 )
 from app.db.session import get_db
@@ -39,6 +40,7 @@ from app.services.role_service import (
 )
 from app.services.user_service import (
     EmailAlreadyExistsError,
+    InactiveRoleAssignmentError,
     InvalidCurrentPasswordError,
     PasswordReuseError,
     RoleNotFoundError,
@@ -95,6 +97,39 @@ RolesReader = Annotated[
 ]
 
 
+def _ensure_role_assignment_allowed(
+    current_user: User,
+    role_ids: list[uuid.UUID] | None,
+    *,
+    allow_empty: bool,
+) -> None:
+    if role_ids is None:
+        return
+
+    if allow_empty and not role_ids:
+        return
+
+    if current_user.is_superuser:
+        return
+
+    permission_names = (
+        get_permission_names(
+            current_user
+        )
+    )
+
+    if "roles.manage" not in permission_names:
+        raise HTTPException(
+            status_code=(
+                status.HTTP_403_FORBIDDEN
+            ),
+            detail=(
+                "Role assignment requires "
+                "the roles.manage permission."
+            ),
+        )
+
+
 def _raise_user_service_error(
     error: Exception,
 ) -> None:
@@ -109,7 +144,10 @@ def _raise_user_service_error(
 
     if isinstance(
         error,
-        RoleNotFoundError,
+        (
+            RoleNotFoundError,
+            InactiveRoleAssignmentError,
+        ),
     ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -225,8 +263,14 @@ def read_users(
 def create_system_user(
     user_data: UserCreate,
     db: DatabaseSession,
-    _: UsersManager,
+    current_user: UsersManager,
 ) -> UserRead:
+    _ensure_role_assignment_allowed(
+        current_user,
+        user_data.role_ids,
+        allow_empty=True,
+    )
+
     try:
         user = create_user(
             db,
@@ -235,13 +279,12 @@ def create_system_user(
 
     except (
         EmailAlreadyExistsError,
+        InactiveRoleAssignmentError,
         RoleNotFoundError,
     ) as error:
         _raise_user_service_error(
             error
         )
-
-        raise
 
     return UserRead.model_validate(
         user
@@ -346,6 +389,12 @@ def update_system_user(
             ),
         )
 
+    _ensure_role_assignment_allowed(
+        current_user,
+        user_data.role_ids,
+        allow_empty=False,
+    )
+
     try:
         updated_user = update_user(
             db,
@@ -355,14 +404,13 @@ def update_system_user(
 
     except (
         EmailAlreadyExistsError,
+        InactiveRoleAssignmentError,
         RoleNotFoundError,
         UserNotFoundError,
     ) as error:
         _raise_user_service_error(
             error
         )
-
-        raise
 
     return UserRead.model_validate(
         updated_user
@@ -407,8 +455,6 @@ def unlock_system_user(
         _raise_user_service_error(
             error
         )
-
-        raise
 
     unlocked_at = datetime.now(
         timezone.utc
@@ -506,8 +552,6 @@ def update_current_profile(
             error
         )
 
-        raise
-
     return UserRead.model_validate(
         user
     )
@@ -537,8 +581,6 @@ def change_current_password(
         _raise_user_service_error(
             error
         )
-
-        raise
 
     return {
         "message": (

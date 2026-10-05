@@ -1,21 +1,137 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from typing import Annotated
+
+from fastapi import Depends, FastAPI
+from sqlalchemy import text
+from sqlalchemy.orm import Session
+from fastapi.middleware.cors import (
+    CORSMiddleware,
+)
+from starlette.middleware.trustedhost import (
+    TrustedHostMiddleware,
+)
+
 from app.api.v1.router import api_router
 from app.core.config import get_settings
+from app.db.session import get_db
+from app.core.error_handlers import (
+    unhandled_exception_handler,
+)
+from app.middleware.security_headers import (
+    SecurityHeadersMiddleware,
+)
+
 
 settings = get_settings()
 
-app = FastAPI(title=settings.app_name, version="0.1.0")
+DatabaseSession = Annotated[
+    Session,
+    Depends(get_db),
+]
+
+
+app = FastAPI(
+    title=settings.app_name,
+    version="0.1.0",
+    docs_url=(
+        "/docs"
+        if settings.api_docs_enabled
+        else None
+    ),
+    redoc_url=(
+        "/redoc"
+        if settings.api_docs_enabled
+        else None
+    ),
+    openapi_url=(
+        "/openapi.json"
+        if settings.api_docs_enabled
+        else None
+    ),
+)
+
+app.add_exception_handler(
+    Exception,
+    unhandled_exception_handler,
+)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origin_list,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=(
+        settings.cors_origin_list
+    ),
+    allow_credentials=(
+        settings.cors_allow_credentials
+    ),
+    allow_methods=(
+        settings.cors_allowed_method_list
+    ),
+    allow_headers=(
+        settings.cors_allowed_header_list
+    ),
+    expose_headers=(
+        settings.cors_exposed_header_list
+    ),
+    max_age=600,
 )
-app.include_router(api_router, prefix=settings.api_v1_prefix)
+
+app.add_middleware(
+    TrustedHostMiddleware,
+    allowed_hosts=(
+        settings.trusted_host_list
+    ),
+)
+
+if settings.security_headers_enabled:
+    app.add_middleware(
+        SecurityHeadersMiddleware,
+        hsts_enabled=(
+            settings.hsts_active
+        ),
+        hsts_max_age_seconds=(
+            settings.hsts_max_age_seconds
+        ),
+    )
+
+app.include_router(
+    api_router,
+    prefix=settings.api_v1_prefix,
+)
 
 
-@app.get("/")
+@app.get(
+    "/health",
+    include_in_schema=False,
+)
+def health() -> dict[str, str]:
+    return {
+        "status": "ok",
+    }
+
+
+@app.get(
+    "/ready",
+    include_in_schema=False,
+)
+def readiness(
+    db: DatabaseSession,
+) -> dict[str, str]:
+    db.execute(
+        text("SELECT 1")
+    )
+
+    return {
+        "status": "ready",
+    }
+
+
+@app.get(
+    "/",
+    include_in_schema=False,
+)
 def root() -> dict[str, str]:
-    return {"message": "DFIR Investigation Assistant API"}
+    return {
+        "message": (
+            "DFIR Investigation "
+            "Assistant API"
+        )
+    }

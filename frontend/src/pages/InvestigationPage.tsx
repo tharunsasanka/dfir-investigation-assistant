@@ -33,26 +33,9 @@ import {
   getCases,
 } from '../api/cases'
 import {
-  CaseAuditTimeline,
-} from '../components/cases/CaseAuditTimeline'
-import {
-  CaseEventCorrelations,
-} from '../components/cases/CaseEventCorrelations'
-import {
-  CaseEvidencePanel,
-} from '../components/cases/CaseEvidencePanel'
-import {
-  CaseForensicTimeline,
-} from '../components/cases/CaseForensicTimeline'
-import {
-  CaseInvestigationSummaries,
-} from '../components/cases/CaseInvestigationSummaries'
-import {
-  CaseLogEventExplorer,
-} from '../components/cases/CaseLogEventExplorer'
-import {
-  CaseSecurityFindings,
-} from '../components/cases/CaseSecurityFindings'
+  LazyInvestigationPanel,
+  type InvestigationPanelId,
+} from '../components/investigation/LazyInvestigationPanel'
 import type {
   CaseSeverity,
   CaseStatus,
@@ -61,13 +44,7 @@ import type {
 
 type WorkspaceTab =
   | 'overview'
-  | 'evidence'
-  | 'findings'
-  | 'correlations'
-  | 'timeline'
-  | 'summaries'
-  | 'logs'
-  | 'audit'
+  | InvestigationPanelId
 
 type WorkspaceTabDefinition = {
   id: WorkspaceTab
@@ -561,65 +538,22 @@ export function InvestigationPage() {
       return null
     }
 
-    switch (activeTab) {
-      case 'evidence':
-        return (
-          <CaseEvidencePanel
-            caseId={selectedCase.id}
-          />
-        )
-
-      case 'findings':
-        return (
-          <CaseSecurityFindings
-            caseId={selectedCase.id}
-          />
-        )
-
-      case 'correlations':
-        return (
-          <CaseEventCorrelations
-            caseId={selectedCase.id}
-          />
-        )
-
-      case 'timeline':
-        return (
-          <CaseForensicTimeline
-            caseId={selectedCase.id}
-          />
-        )
-
-      case 'summaries':
-        return (
-          <CaseInvestigationSummaries
-            caseId={selectedCase.id}
-          />
-        )
-
-      case 'logs':
-        return (
-          <CaseLogEventExplorer
-            caseId={selectedCase.id}
-          />
-        )
-
-      case 'audit':
-        return (
-          <CaseAuditTimeline
-            caseId={selectedCase.id}
-          />
-        )
-
-      default:
-        return (
-          <WorkspaceOverview
-            investigationCase={
-              selectedCase
-            }
-          />
-        )
+    if (activeTab === 'overview') {
+      return (
+        <WorkspaceOverview
+          investigationCase={
+            selectedCase
+          }
+        />
+      )
     }
+
+    return (
+      <LazyInvestigationPanel
+        panel={activeTab}
+        caseId={selectedCase.id}
+      />
+    )
   }
 
   return (

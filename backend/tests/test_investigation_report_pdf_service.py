@@ -47,7 +47,7 @@ EVIDENCE_ID = uuid.uuid4()
 
 
 def make_summary_response():
-    return InvestigationSummaryResponse.model_construct(
+    return InvestigationSummaryResponse(
         id=SUMMARY_ID,
         case_id=CASE_ID,
         parent_summary_id=None,

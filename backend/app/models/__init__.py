@@ -1,3 +1,8 @@
+from app.models.authentication import (
+    AuthRefreshToken,
+    AuthSession,
+    LoginRateLimit,
+)
 from app.models.case import (
     Case,
     CaseSeverity,
@@ -42,6 +47,9 @@ from app.models.user import User
 
 
 __all__ = [
+    "AuthRefreshToken",
+    "AuthSession",
+    "LoginRateLimit",
     "Case",
     "CaseSeverity",
     "CaseStatus",

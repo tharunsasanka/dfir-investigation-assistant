@@ -1,11 +1,25 @@
 ﻿import uuid
-from datetime import datetime, timezone
+from datetime import (
+    datetime,
+    timezone,
+)
 
-from sqlalchemy import Boolean, DateTime, Integer, String
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    Integer,
+    String,
+)
+from sqlalchemy.orm import (
+    Mapped,
+    mapped_column,
+    relationship,
+)
 
 from app.db.session import Base
-from app.models.associations import user_roles
+from app.models.associations import (
+    user_roles,
+)
 
 
 class User(Base):
@@ -45,32 +59,44 @@ class User(Base):
         nullable=False,
     )
 
-    failed_login_attempts: Mapped[int] = mapped_column(
+    failed_login_attempts: Mapped[
+        int
+    ] = mapped_column(
         Integer,
         default=0,
         nullable=False,
     )
 
-    locked_until: Mapped[datetime | None] = mapped_column(
+    locked_until: Mapped[
+        datetime | None
+    ] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
     )
 
-    last_login_at: Mapped[datetime | None] = mapped_column(
+    last_login_at: Mapped[
+        datetime | None
+    ] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
     )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(
+            timezone.utc
+        ),
         nullable=False,
     )
 
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(
+            timezone.utc
+        ),
+        onupdate=lambda: datetime.now(
+            timezone.utc
+        ),
         nullable=False,
     )
 
@@ -78,4 +104,11 @@ class User(Base):
         "Role",
         secondary=user_roles,
         back_populates="users",
+    )
+
+    auth_sessions = relationship(
+        "AuthSession",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
     )

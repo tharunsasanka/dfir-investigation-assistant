@@ -207,6 +207,58 @@ def test_path_traversal_filename_is_neutralized(
 
     evidence_id = UUID(uploaded["id"])
 
+    download_response = client.get(
+        (
+            f"/api/v1/evidence/"
+            f"{evidence_id}/content"
+        ),
+        headers=headers,
+    )
+
+    assert download_response.status_code == 200
+
+    assert (
+        download_response.content
+        == file_content
+    )
+
+    assert (
+        download_response.headers[
+            "content-type"
+        ]
+        == "application/octet-stream"
+    )
+
+    content_disposition = (
+        download_response.headers[
+            "content-disposition"
+        ]
+    )
+
+    assert content_disposition.lower().startswith(
+        "attachment;"
+    )
+
+    assert (
+        "suspicious.log"
+        in content_disposition
+    )
+
+    assert (
+        "../"
+        not in content_disposition
+    )
+
+    assert (
+        "..\\"
+        not in content_disposition
+    )
+
+    assert (
+        "inline"
+        not in content_disposition.lower()
+    )
+
     db = SessionLocal()
 
     try:

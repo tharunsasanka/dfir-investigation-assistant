@@ -7,11 +7,13 @@ import {
   clearAuthTokens,
   getAccessToken,
   getRefreshToken,
-  saveAccessToken,
+  saveAuthTokens,
 } from '../auth/storage'
-import type { AccessTokenResponse } from '../types/auth'
+import type {
+  AccessTokenResponse,
+} from '../types/auth'
 
-const API_BASE_URL =
+export const API_BASE_URL =
   import.meta.env.VITE_API_URL ??
   'http://localhost:8000/api/v1'
 
@@ -20,43 +22,53 @@ export const apiClient = axios.create({
   timeout: 15000,
 })
 
-const refreshClient = axios.create({
+export const sessionClient = axios.create({
   baseURL: API_BASE_URL,
   timeout: 15000,
 })
 
-type RetryableRequest = InternalAxiosRequestConfig & {
-  _retry?: boolean
-}
+type RetryableRequest =
+  InternalAxiosRequestConfig & {
+    _retry?: boolean
+  }
 
-let activeRefreshRequest: Promise<string> | null = null
+let activeRefreshRequest:
+  Promise<string> | null = null
 
-async function refreshStoredAccessToken(): Promise<string> {
-  const refreshToken = getRefreshToken()
+async function refreshStoredAccessToken():
+Promise<string> {
+  const refreshToken =
+    getRefreshToken()
 
   if (!refreshToken) {
-    throw new Error('No refresh token is available.')
+    throw new Error(
+      'No refresh token is available.',
+    )
   }
 
   if (!activeRefreshRequest) {
-    activeRefreshRequest = refreshClient
-      .post<AccessTokenResponse>(
-        '/auth/refresh',
-        {
-          refresh_token: refreshToken,
-        },
-      )
-      .then((response) => {
-        const newAccessToken =
-          response.data.access_token
+    activeRefreshRequest =
+      sessionClient
+        .post<AccessTokenResponse>(
+          '/auth/refresh',
+          {
+            refresh_token:
+              refreshToken,
+          },
+        )
+        .then((response) => {
+          saveAuthTokens(
+            response.data,
+          )
 
-        saveAccessToken(newAccessToken)
-
-        return newAccessToken
-      })
-      .finally(() => {
-        activeRefreshRequest = null
-      })
+          return (
+            response.data
+              .access_token
+          )
+        })
+        .finally(() => {
+          activeRefreshRequest = null
+        })
   }
 
   return activeRefreshRequest
@@ -64,9 +76,11 @@ async function refreshStoredAccessToken(): Promise<string> {
 
 apiClient.interceptors.request.use(
   (
-    config: InternalAxiosRequestConfig,
+    config:
+      InternalAxiosRequestConfig,
   ): InternalAxiosRequestConfig => {
-    const accessToken = getAccessToken()
+    const accessToken =
+      getAccessToken()
 
     if (accessToken) {
       config.headers.Authorization =
@@ -79,13 +93,27 @@ apiClient.interceptors.request.use(
 
 apiClient.interceptors.response.use(
   (response) => response,
-  async (error: AxiosError) => {
+  async (
+    error: AxiosError,
+  ) => {
     const originalRequest =
-      error.config as RetryableRequest | undefined
+      error.config as
+        RetryableRequest
+        | undefined
+
+    const requestUrl =
+      originalRequest?.url ?? ''
 
     const isAuthenticationRequest =
-      originalRequest?.url?.includes('/auth/login') ||
-      originalRequest?.url?.includes('/auth/refresh')
+      requestUrl.includes(
+        '/auth/login',
+      ) ||
+      requestUrl.includes(
+        '/auth/refresh',
+      ) ||
+      requestUrl.includes(
+        '/auth/logout',
+      )
 
     if (
       error.response?.status !== 401 ||
@@ -93,7 +121,9 @@ apiClient.interceptors.response.use(
       originalRequest._retry ||
       isAuthenticationRequest
     ) {
-      return Promise.reject(error)
+      return Promise.reject(
+        error,
+      )
     }
 
     originalRequest._retry = true
@@ -105,15 +135,24 @@ apiClient.interceptors.response.use(
       originalRequest.headers.Authorization =
         `Bearer ${newAccessToken}`
 
-      return apiClient(originalRequest)
+      return apiClient(
+        originalRequest,
+      )
     } catch (refreshError) {
       clearAuthTokens()
 
-      if (window.location.pathname !== '/login') {
-        window.location.assign('/login')
+      if (
+        window.location.pathname
+        !== '/login'
+      ) {
+        window.location.assign(
+          '/login',
+        )
       }
 
-      return Promise.reject(refreshError)
+      return Promise.reject(
+        refreshError,
+      )
     }
   },
 )
